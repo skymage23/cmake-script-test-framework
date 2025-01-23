@@ -41,6 +41,11 @@ def extract_code_from_file(filename):
 
     #What if they invoke a function or macro that they created for their tests?
 
+    #Maybe I need to rethink this and just spit out the same file put in,
+    #but with the "add_setup", "setup_test", and "add_teardown" pseudo
+    #-macros and the "run" function invocation removed, and in their place,
+    #code that sets up and runs the tests.
+
     #Hello
     re_macro_start = re.compile("^\s?(.*?)add_test\(")
     re_cmake_command_end = re.compile(")\s?(.*?)(#)?$")
