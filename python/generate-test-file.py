@@ -34,6 +34,13 @@ def extract_code_from_file(filename):
     setup = None
     teardown = None
 
+    #What do I do if the client includes other CMake files to be tested (
+    #and they will)?
+    #We need to capture and retain the include statements to include
+    #in the generated file.
+
+    #What if they invoke a function or macro that they created for their tests?
+
     #Hello
     re_macro_start = re.compile("^\s?(.*?)add_test\(")
     re_cmake_command_end = re.compile(")\s?(.*?)(#)?$")
