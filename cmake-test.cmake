@@ -1,30 +1,92 @@
-find_package(Python3)
+message(STATUS "Running CMake as linter using dummy definitions")
 
+function(check_macro_exists MACRO_NAME)
+    if (NOT COMMAND ${MACRO_NAME})
+        message(FATAL_ERROR "Macro ${MACRO_NAME} does not exist")
+    endif()
+endfunction()
 
-set(TEMP "${CMAKE_CURRENT_LIST_DIR}")
-file(REAL_PATH "${TEMP}" CURRENT_SCRIPT_DIR)
+function(add_test_macro)
+    if(${ARGC} LESS 2)
+        message(FATAL_ERROR "add_setup_macro:  Too few arguments.")
+    endif()
 
-file(DIRECTORY "${TEMP}" TEMP)
+    if(${ARGC} GREATER_EQUAL 3)
+        message(FATAL_ERROR "add_setup_macro:  Too many arguments.")
+    endif()
 
-set(PYTHON_TEST_GENERATOR_SCRIPT_PATH "")
-set(TEMP "${PYTHON_TEST_GENERATOR_SCRIPT_PATH}/python/generate-test-file.py")
-
-function(run_test)
-   set(TEST_SCRIPT_FILENAME "${CMAKE_CURRENT_LIST_FILE}")
-   file(NAME ${TEST_SCRIPT_FILENAME} TEST_SCRIPT_FILENAME)
-
-    #generate test file
-    execute_process(
-	COMMAND "${Python::Interpreter}" ${CMAKE_CURRENT_LIST_FILE}
-	WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}"
-	COMMAND_ERROR_IS_FATAL ANY
+    set(oneValueArgs MACRO_NAME TEST_GROUP)
+    cmake_parse_arguments(
+        arg_test_macro
+        ""
+        "${oneValueArgs}"
+        ""
+        ${ARGN}
     )
 
-    #run generated test file
-    execute_process(
-        COMMAND "${CMAKE_COMMAND}" -P "${TEST_SCRIPT_FILENAME}"
-	WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}"
-	COMMAND_ERROR_IS_FATAL ANY
+    if(NOT arg_test_macro_MACRO_NAME)
+        message(FATAL_ERROR "MACRO_NAME argument not specified.")
+    endif()
+
+    if(NOT TEST_GROUP)
+        set(TEST_GROUP "${arg_test_macro_MACRO_NAME}")
+    endif()
+
+    message(STATUS "CMake lint test: add_test_macro: ${arg_test_macro_MACRO_NAME} ${TEST_GROUP}")
+
+    check_macro_exists(${arg_test_macro_MACRO_NAME})
+endfunction()
+
+function(add_setup_macro)
+    if(${ARGC} LESS 2)
+        message(FATAL_ERROR "add_setup_macro:  Too few arguments.")
+    endif()
+
+    if(${ARGC} GREATER 2)
+        message(FATAL_ERROR "add_setup_macro:  Too many arguments.")
+    endif()
+
+    set(options "")
+    set(oneValueArgs "MACRO_NAME")
+    set(multiValueArgs "")
+
+    cmake_parse_arguments(arg_setup
+        "${options}"
+        "${oneValueArgs}"
+        "${multiValueArgs}"
+        ${ARGN}
     )
 
+    if(NOT arg_setup_MACRO_NAME)
+        message(FATAL_ERROR "MACRO_NAME argument not specified.")
+    endif()
+
+    message(STATUS "CMake lint test: add_setup_macro: ${arg_setup_MACRO_NAME}")
+    check_macro_exists(${arg_setup_MACRO_NAME})
+endfunction()
+
+function(add_teardown_macro)
+    if(${ARGC} LESS 2)
+        message(FATAL_ERROR "add_setup_macro:  Too few arguments.")
+    endif()
+
+    if(${ARGC} GREATER 2)
+        message(FATAL_ERROR "add_setup_macro:  Too many arguments.")
+    endif()
+
+    set(oneValueArgs MACRO_NAME)
+    cmake_parse_arguments(
+        arg_teardown
+        ""
+        "${oneValueArgs}"
+        ""
+        ${ARGN}
+    )
+
+    if(NOT arg_teardown_MACRO_NAME)
+        message(FATAL_ERROR "MACRO_NAME argument not specified.")
+    endif()
+
+    message(STATUS "CMake lint test: add_teardown_macro: ${arg_teardown_MACRO_NAME}")
+    check_macro_exists(${arg_teardown_MACRO_NAME})
 endfunction()
