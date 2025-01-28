@@ -257,8 +257,12 @@ def parse_file(filename, app_singleton):
     checks_index = 0
     check_passed = False
     parse_status = ParseStatus()
-    with open(filename, 'r') as file:
-        parse_status.lines = file.readlines()
+    try:
+        with open(filename, 'r') as file:
+            parse_status.lines = file.readlines()
+    except FileNotFoundError:
+        print("Test descriptor file \"{}\" does not exist.".format(filename), file=sys.stderr)
+        return None
 
     while parse_status.current_index < len(parse_status.lines):
         checks_index = 0
@@ -364,6 +368,10 @@ if __name__ == "__main__":
     app_singleton = ApplicationSingleton()
     parse_status = parse_file(file_to_parse, app_singleton)
 
+    if parse_status is None:
+        print("An error occurred while parsing file \"{}\".".format(file_to_parse), file=sys.stderr)
+        sys.exit(1)
+
     output_buffer = generate_file_contents(parse_status)
 
     if test_directory.exists():
@@ -384,5 +392,4 @@ if __name__ == "__main__":
     test_file = test_directory / file_to_parse
     with open(test_file, 'w') as file:
         file.writelines(output_buffer)
-    
-    #print("".join(output_buffer))
+        #print("".join(output_buffer))
