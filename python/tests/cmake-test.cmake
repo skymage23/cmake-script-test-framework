@@ -1,5 +1,17 @@
-message(STATUS "Running CMake as linter using dummy definitions")
 
+#*******************************************************
+# This is a generated file that is usually destroyed
+# after it is used. Any changes to this file will be
+# discarded. Instead, make your changes to the descriptor
+# file used to generate this file.
+#*******************************************************
+#*****************
+# Includes:
+#*****************
+
+#************************
+# Command Definitions:
+#************************
 function(check_macro_exists MACRO_NAME)
     if (NOT COMMAND ${MACRO_NAME})
         message(FATAL_ERROR "Macro ${MACRO_NAME} does not exist")
@@ -96,3 +108,7 @@ function(add_teardown_macro)
     message(STATUS "CMake lint test: add_teardown_macro: ${arg_teardown_MACRO_NAME}")
     check_macro_exists(${arg_teardown_MACRO_NAME})
 endfunction()
+
+#************************
+# Tests: 
+#************************

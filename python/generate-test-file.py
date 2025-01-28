@@ -1,7 +1,8 @@
 #Given a test description file, itself valid CMake, generates
 #another CMake file that is capable of running the tests.
-import pdb
 import enum
+import os
+import pathlib
 import re
 import subprocess
 import sys
@@ -32,9 +33,8 @@ class ParseStatus:
     def __init__(self):
         self.current_index = 0
         self.lines = []
-        self.ranges_to_cut = []
         self.includes = []
-        self.test_groups = []
+        self.test_groups = {}
         self.setup_macro = None
         self.teardown_macro = None
         self.command_definitions = []
@@ -53,7 +53,6 @@ class ParseStatus:
         str_arr.append("*******************************************\n")
 
         str_arr.append(str.format("Current index: {0}\n", self.current_index))
-        str_arr.append(str.format("ranges_to_cut: {0}\n", self.ranges_to_cut))
         str_arr.append(str.format("includes: {0}\n", self.includes))
         str_arr.append(str.format("test_groups: {0}\n", self.test_groups))
         str_arr.append(str.format("setup_macro: {0}\n", self.setup_macro))
@@ -74,9 +73,24 @@ class CommandDefinitionTypes(enum.Enum):
 
 def scan_for_include(parse_status, app_singleton):
     #We ignore "include(*/cmake-test.cmake)"
-    if not app_singleton.re_include.search(parse_status.lines[parse_status.current_index]) is None:
+    CMAKE_TEST_FILENAME = "cmake-test.cmake"
+    temp = None
+    index_temp = parse_status.current_index
+    str_temp = parse_status.lines[index_temp]
+
+    if app_singleton.re_include.search(str_temp) is None:
+        return False
+    index_temp = str_temp.index('(')
+    str_temp = (str_temp[index_temp + 1: -2]).strip()
+ 
+    temp = pathlib.Path(str_temp)
+    str_temp = temp.name
+
+    #Quietly ignore the include of the dummy definitions:        
+    if not CMAKE_TEST_FILENAME in str_temp:
         parse_status.includes.append(parse_status.current_index)
-        parse_status.current_index += 1
+    parse_status.current_index += 1
+    return True
 
 #Macros and functions are defined similarly and can be detected in the same way.
 #returns tuple: (start, end). If not macro, returns None
@@ -146,7 +160,10 @@ def scan_for_add_setup_macro(parse_status, app_singleton):
         return False
 
     if not parse_status.setup_macro is None:
-        raise TestDescriptorFileParseError(index_temp1, "You cannot define more than one setup macro.")
+        raise TestDescriptorFileParseError(
+            "You cannot define more than one setup macro.",
+            line = index_temp1
+        )
 
     index_temp1 = str_temp.index('(')
     str_temp = (str_temp[index_temp1 + 1:-2]).strip()
@@ -168,7 +185,10 @@ def scan_for_add_teardown_macro(parse_status, app_singleton):
         return False
 
     if not parse_status.teardown_macro is None:
-        raise TestDescriptorFileParseError(index_temp1, "You cannot define more than one teardown macro.")
+        raise TestDescriptorFileParseError(
+            "You cannot define more than one teardown macro.",
+            line = index_temp1
+        )
 
     index_temp1 = str_temp.index('(')
     str_temp = (str_temp[index_temp1 + 1:-2]).strip()
@@ -178,14 +198,41 @@ def scan_for_add_teardown_macro(parse_status, app_singleton):
 
     return True
 
-##Accepts: tuple: lines, current_index, and ranges_to_cut
-##Returns None if not a \"add_test\" pseudo-macro
-##Else, returns updated curr_status.
-#def scan_for_add_test_macro(parse_status, app_singleton):
-#    re_macro_start = re.compile("^\s?(.*?)add_test_macro\(")
-#    if not re.match(curr_status[0][0]):
-#        return curr_status
-#    raise NotImplemented()
+
+def scan_for_add_test_macro(parse_status, app_singleton):
+    TOTAL_POSSIBLE_ARGUMENTS = 4
+    macro_name = None
+    test_group = None
+    index_temp = None
+    arr_temp = None
+    str_temp = parse_status.lines[parse_status.current_index]
+    
+    if app_singleton.re_add_test_macro.search(str_temp) is None:
+        return False 
+
+    index_temp = str_temp.index('(')
+    str_temp = (str_temp[index_temp + 1: -2]).strip()
+    arr_temp = str_temp.split()
+
+    macro_name = arr_temp[1]
+
+    if len(arr_temp) < TOTAL_POSSIBLE_ARGUMENTS:
+        test_group = macro_name
+    else:
+        test_group = arr_temp[3]
+
+    if not test_group in parse_status.test_groups:
+        parse_status.test_groups[test_group] = {}
+
+    if macro_name in parse_status.test_groups[test_group]:
+        raise TestDescriptorFileParseError(
+            "You cannot add the same test to the same test group more than once.",
+            line = parse_status.current_index
+        )
+
+    parse_status.test_groups[test_group][macro_name] = True
+    parse_status.current_index += 1
+    return True
 
 #Accepts: tuple: lines, and ranges_to_cut
 #def scan_lines_for_macro_match(lines, app_singleton):
@@ -200,7 +247,8 @@ def parse_file(filename, app_singleton):
         scan_for_macro_definition,
         scan_for_function_definition,
         scan_for_add_setup_macro,
-        scan_for_add_teardown_macro
+        scan_for_add_teardown_macro,
+        scan_for_add_test_macro
     ]
 
     if filename is None:
@@ -224,6 +272,60 @@ def parse_file(filename, app_singleton):
             parse_status.current_index += 1 
     return parse_status
 
+def generate_file_contents(parse_status):
+    test_keys = None;
+    preamble = """
+#*******************************************************
+# This is a generated file that is usually destroyed
+# after it is used. Any changes to this file will be
+# discarded. Instead, make your changes to the descriptor
+# file used to generate this file.
+#*******************************************************\n"""
+    indices_to_ignore=[]
+    str_buffer = [preamble]
+
+    #Add includes:
+    str_buffer.append(
+"""#*****************
+# Includes:
+#*****************\n""")
+    for elem in parse_status.includes:
+        str_buffer.append(parse_status.lines[elem])
+        indices_to_ignore.append(elem)
+    str_buffer.append("\n")
+
+    #Add command definitions:
+    str_buffer.append(
+"""#************************
+# Command Definitions:
+#************************\n""")
+    for elem in parse_status.command_definitions:
+        #Hello:
+        for index in range(elem[0], elem[1] + 1):
+            str_buffer.append(parse_status.lines[index])
+            indices_to_ignore.append(index)
+        str_buffer.append("\n")
+
+    #Add everything that is not a test definition:
+    str_buffer.append(
+"""#************************
+# Tests: 
+#************************\n""")
+    for test_group in parse_status.test_groups.keys():
+        str_buffer.append(
+"""#*
+#* Test Group: {}
+#*
+#*************************\n""".format(test_group)
+)
+        #Hello:
+        str_buffer.append("{}()\n".format(parse_status.setup_macro))
+        for test in parse_status.test_groups[test_group].keys():
+            str_buffer.append("{}()\n".format(test))
+        str_buffer.append("{}()".format(parse_status.teardown_macro))
+        str_buffer.append("\n\n")
+    return str_buffer
+
 def run_cmake_as_linter(filename):
     try:
         cmake_process = subprocess.run(
@@ -245,7 +347,7 @@ def run_cmake_as_linter(filename):
 
 
 if __name__ == "__main__":
-    #Hello
+    test_directory = pathlib.Path(__file__).parent / "tests"
     argc = len(sys.argv)
     if argc > 2:
         print("Too many arguments", file=sys.stderr)
@@ -262,9 +364,25 @@ if __name__ == "__main__":
     app_singleton = ApplicationSingleton()
     parse_status = parse_file(file_to_parse, app_singleton)
 
-    print(parse_status)
-    preamble_template=""
-    conclusion_template=""
+    output_buffer = generate_file_contents(parse_status)
 
+    if test_directory.exists():
+        if not test_directory.is_dir():
+            print(
+                "There exists something at path \"tests\", but it is not a directory",
+                file=sys.stderr
+            )
+            sys.exit(1)
+        if not os.access(test_directory, os.W_OK):
+            print(
+                "While the \"tests\" directory exists, You do not have write access to it."
+            )
+            sys.exit(1)
+    else:
+        test_directory.mkdir() 
 
-
+    test_file = test_directory / file_to_parse
+    with open(test_file, 'w') as file:
+        file.writelines(output_buffer)
+    
+    #print("".join(output_buffer))
