@@ -1,4 +1,13 @@
 find_package(Python)
+if(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Darwin")
+  message(WARNING "You appear to be trying to run this script on a mac.
+Please be advised that the version of Python shipped with macOS by
+default may be too old to run the test file generation script. You
+may have to install a newer version of Python (say, using Homebrew)
+and alter your PATH environment variable so that this new version
+of Python will be found before (or in place of) the default version.
+")
+endif()
 
 set(TEMP "${CMAKE_CURRENT_LIST_DIR}")
 file(REAL_PATH "${TEMP}" CURRENT_SCRIPT_DIR)

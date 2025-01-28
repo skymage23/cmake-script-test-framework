@@ -7,3 +7,9 @@ tests themselves.
 
 To actually run the tests, include "cmake-test-runner.cmake" and call "run_test",
 passing in the filepath to your test descriptor file.
+
+A word of warning: If you are running this script on macOS, the default Python
+install included with the OS may be too old to run the test generation script.
+You may have to install a newer Python versio and have it put on the system
+PATH so that the new version will be found before (or in place of)
+the default macOS install.
