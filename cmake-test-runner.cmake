@@ -1,4 +1,6 @@
+include_guard(GLOBAL)
 find_package(Python)
+
 
 set(TEMP "${CMAKE_CURRENT_LIST_DIR}")
 file(REAL_PATH "${TEMP}" CURRENT_SCRIPT_DIR)

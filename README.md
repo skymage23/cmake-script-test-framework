@@ -7,3 +7,9 @@ tests themselves.
 
 To actually run the tests, include "cmake-test-runner.cmake" and call "run_test",
 passing in the filepath to your test descriptor file.
+
+For now, we don't have any CI.  Tests will have to run manually by invoking
+
+cmake -P framework-tester.cmake
+
+.
