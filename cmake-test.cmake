@@ -1,3 +1,4 @@
+include_guard(GLOBAL)
 message(STATUS "Running CMake as linter using dummy definitions")
 
 function(check_macro_exists MACRO_NAME)
