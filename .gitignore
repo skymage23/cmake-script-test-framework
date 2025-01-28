@@ -1,4 +1,6 @@
 */tests
 ~*
 *.swp
+*/*.swp
 */trial.cmake
+trial.cmake
