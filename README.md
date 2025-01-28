@@ -8,8 +8,16 @@ tests themselves.
 To actually run the tests, include "cmake-test-runner.cmake" and call "run_test",
 passing in the filepath to your test descriptor file.
 
+<<<<<<< HEAD
 For now, we don't have any CI.  Tests will have to run manually by invoking
 
 cmake -P framework-tester.cmake
 
 .
+=======
+A word of warning: If you are running this script on macOS, the default Python
+install included with the OS may be too old to run the test generation script.
+You may have to install a newer Python versio and have it put on the system
+PATH so that the new version will be found before (or in place of)
+the default macOS install.
+>>>>>>> 5b922c0329dd3dbc77f77a5f9cd716734e1d903e
