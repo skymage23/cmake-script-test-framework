@@ -40,7 +40,7 @@ function(run_test)
     set(oneValueArgs "TEST_SCRIPT_FILE")
     cmake_parse_arguments(run_test ${options} ${oneValueArgs} "" ${ARGN})
  
-    if(NOT run_tests_TEST_SCRIPT_FILE)
+    if(NOT run_test_TEST_SCRIPT_FILE)
         message(FATAL_ERROR "TEST_SCRIPT_FILE was not specified.")
     endif()
 
