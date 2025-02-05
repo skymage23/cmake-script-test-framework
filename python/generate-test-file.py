@@ -126,9 +126,7 @@ def resolve_relative_include_path(parse_status, relative_path, app_singleton):
     exploded_input_origin_dir_path = app_singleton.context.project_source_dir.__str__().split(separator)
     dir_stack = []
 
-    print("\n\nrelative_path (before): {}\n\n".format(relative_path))
     relative_path = resolve_vars_in_filepath(relative_path, app_singleton)
-    print("\n\nrelative_path (future): {}\n\n".format(relative_path))
 
     exploded_path = relative_path.split(separator)
     #Handle the case of len(exploded_path) = 1:
@@ -139,7 +137,6 @@ def resolve_relative_include_path(parse_status, relative_path, app_singleton):
         exploded_input_origin_dir_path.extend(exploded_path)
         exploded_path = exploded_input_origin_dir_path
 
-    print("\n\nexploded_path: {}\n\n".format(exploded_path))
     for i in range(0, len(exploded_path)):
         elem_temp = exploded_path[i]
         if(elem_temp == SELF_REFERENCE):
@@ -154,7 +151,6 @@ def resolve_relative_include_path(parse_status, relative_path, app_singleton):
         else:
             dir_stack.append(elem_temp)
 
-    print("\n\ndir_stack: {}\n\n".format(dir_stack))
     return separator.join(dir_stack)
 #
 # There is no need to account for syntax errors here as that
@@ -296,16 +292,15 @@ def scan_for_add_test_macro(parse_status, app_singleton):
     index_temp = None
     arr_temp = None
     str_temp = parse_status.lines[parse_status.current_index]
-    
+    str_temp.strip()
+
     if app_singleton.re_add_test_macro.search(str_temp) is None:
         return False 
-
     index_temp = str_temp.index('(')
-    str_temp = (str_temp[index_temp + 1: -2]).strip()
+    str_temp = (str_temp[index_temp + 1: -(len(str_temp) - str_temp.index(')'))]).strip()
     arr_temp = str_temp.split()
 
     macro_name = arr_temp[1]
-
     if len(arr_temp) < TOTAL_POSSIBLE_ARGUMENTS:
         test_group = macro_name
     else:
