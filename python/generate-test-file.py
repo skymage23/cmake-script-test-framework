@@ -1,11 +1,16 @@
+#!/usr/bin/env python3
+
 #Given a test description file, itself valid CMake, generates
 #another CMake file that is capable of running the tests.
+import argparse
 import enum
 import os
 import pathlib
 import re
 import subprocess
 import sys
+
+import cmake_helper
 
 class TestDescriptorFileParseError(RuntimeError):
     def __init__(self, msg, *args, line = '- ',  **kwargs):
@@ -14,7 +19,8 @@ class TestDescriptorFileParseError(RuntimeError):
 
 
 class ApplicationSingleton:
-    def __init__(self):
+    def __init__(self, context):
+        self.context = context
         self.re_add_setup_macro = re.compile(R"^\s?add_setup_macro\s?\(")
         self.re_add_teardown_macro = re.compile(R"^\s?add_teardown_macro\s?\(")
         self.re_add_test_macro = re.compile(R"^\s?add_test_macro\s?\(")
@@ -31,6 +37,7 @@ class TestMacro:
 
 class ParseStatus:
     def __init__(self):
+        self.input_filepath = None
         self.current_index = 0
         self.lines = []
         self.includes = []
@@ -41,6 +48,7 @@ class ParseStatus:
 
     def __str__(self):
         str_arr = []
+        str_arr.append(str.format("Input filename: {}", self.input_filepath.__str__()))
         str_arr.append("*******************************************\n")
         str_arr.append("Line read-in recall begin:\n")
         str_arr.append("*******************************************\n")
@@ -66,6 +74,88 @@ class CommandDefinitionTypes(enum.Enum):
     MACRO = enum.auto()
     FUNCTION = enum.auto()
 
+def print_err(string: str):
+    if string is None:
+        string = "Unknown error. Message string was mistakenly set to None."
+
+    print(string, file=sys.stderr)
+
+def die(string: str):
+    print_err(string)
+    sys.exit(1)
+
+##We need to able to resolve some common CMake variables ourselves:
+##CMAKE_CURRENT_LIST_DIR
+##CMAKE_BUILD_DIR
+##CMAKE_SOURCE_DIR
+#def resolve_certain_cmake_vars(parse_status):
+#    raise NotImplemented()
+#
+#def resolve_environment_vars():
+#    raise NotImplemented()
+#
+
+def resolve_vars_in_filepath(filepath, app_singleton):
+    retval = []    
+    separator = os.path.sep
+    exploded_path = filepath.split(separator) 
+    for var in exploded_path:
+        #var = var.strip()
+        #if self.re_cmake_var_dereference.search(var) is None:
+        #    continue
+        
+        #ind_temp1 = var.index('$') + 1
+        #ind_temp2 = var.index('}')
+        #var = var[ind_temp1: -(len(var) - (ind_temp2))]
+
+        ##OK. Are we an environment variable or not.
+        #print(var)
+        #if self.re_cmake_env_var_dereference.search(var) is None:
+        #   retval = resolve_certain_cmake_vars(parse_status)            
+        #else: 
+        retval.append(app_singleton.context.resolve_vars(var))
+    return separator.join(retval)
+
+def resolve_relative_include_path(parse_status, relative_path, app_singleton):
+    #Hello:
+    SELF_REFERENCE = '.'
+    PARENT_REFERENCE = ".."
+    separator = os.path.sep
+    elem_temp = None
+    exploded_path = None 
+    exploded_input_origin_dir_path = app_singleton.context.project_source_dir.__str__().split(separator)
+    dir_stack = []
+
+    print("\n\nrelative_path (before): {}\n\n".format(relative_path))
+    relative_path = resolve_vars_in_filepath(relative_path, app_singleton)
+    print("\n\nrelative_path (future): {}\n\n".format(relative_path))
+
+    exploded_path = relative_path.split(separator)
+    #Handle the case of len(exploded_path) = 1:
+    
+    #What if it is of the form?:
+    #../hello/my/fellow/programmer
+    if exploded_path[0] != '':
+        exploded_input_origin_dir_path.extend(exploded_path)
+        exploded_path = exploded_input_origin_dir_path
+
+    print("\n\nexploded_path: {}\n\n".format(exploded_path))
+    for i in range(0, len(exploded_path)):
+        elem_temp = exploded_path[i]
+        if(elem_temp == SELF_REFERENCE):
+            continue
+        elif(elem_temp == PARENT_REFERENCE):
+            if(len(dir_stack) == 1):
+                continue  #This mimics how filesystem backreferences work.
+                          #The lowest level backreference always refers to the current
+                          #directory itself.
+            dir_stack.pop()
+            continue
+        else:
+            dir_stack.append(elem_temp)
+
+    print("\n\ndir_stack: {}\n\n".format(dir_stack))
+    return separator.join(dir_stack)
 #
 # There is no need to account for syntax errors here as that
 # was already handled during the linting step.
@@ -83,12 +173,12 @@ def scan_for_include(parse_status, app_singleton):
     index_temp = str_temp.index('(')
     str_temp = (str_temp[index_temp + 1: -2]).strip()
  
-    temp = pathlib.Path(str_temp)
-    str_temp = temp.name
-
+    temp = resolve_relative_include_path(parse_status, str_temp, app_singleton)  #Resolve relative paths.
+    str_temp = pathlib.Path(temp).name
+    
     #Quietly ignore the include of the dummy definitions:        
     if not CMAKE_TEST_FILENAME in str_temp:
-        parse_status.includes.append(parse_status.current_index)
+        parse_status.includes.append((parse_status.current_index, temp.__str__()))
     parse_status.current_index += 1
     return True
 
@@ -238,7 +328,7 @@ def scan_for_add_test_macro(parse_status, app_singleton):
 #def scan_lines_for_macro_match(lines, app_singleton):
 #    raise NotImplemented()
 
-def parse_file(filename, app_singleton):
+def parse_file(app_singleton):
     #Shoud these checks pass, they advance "parse_status.current_index"
     #by point to the line after that indicating the end of the
     #structures they are looking for.
@@ -251,17 +341,14 @@ def parse_file(filename, app_singleton):
         scan_for_add_test_macro
     ]
 
-    if filename is None:
-        raise TypeError("\"filename\" cannot be None.")
-
     checks_index = 0
     check_passed = False
     parse_status = ParseStatus()
     try:
-        with open(filename, 'r') as file:
+        with open(context.list_file.__str__(), 'r') as file:
             parse_status.lines = file.readlines()
     except FileNotFoundError:
-        print("Test descriptor file \"{}\" does not exist.".format(filename), file=sys.stderr)
+        print("Test descriptor file \"{}\" does not exist.".format(app_singleton.context.list_file.__str__()), file=sys.stderr)
         return None
 
     while parse_status.current_index < len(parse_status.lines):
@@ -294,8 +381,8 @@ def generate_file_contents(parse_status):
 # Includes:
 #*****************\n""")
     for elem in parse_status.includes:
-        str_buffer.append(parse_status.lines[elem])
-        indices_to_ignore.append(elem)
+        str_buffer.append("".join(["include(", elem[1], ")\n"]))
+        indices_to_ignore.append(elem[0])
     str_buffer.append("\n")
 
     #Add command definitions:
@@ -349,47 +436,109 @@ def run_cmake_as_linter(filename):
         return False
     return True
 
+def parse_args_into_context():
+    context = None
+    build_dir = None
+    source_dir = None
+    proj_source_dir = None
+
+    parser = argparse.ArgumentParser(
+        prog = 'generate-test-file.py',
+        description = 'Takes in a test descriptor file and generates a CMake unit test file.',
+        usage='%(prog)s [options]'
+    )
+    parser.add_argument(
+        '-b',
+        '--build_dir',
+        type=str,
+        help='CMake build directory.',
+        required = True
+    )
+
+    parser.add_argument(
+        '-c',
+        '--source_dir',
+        type=str,
+        help = "CMake source directory.",
+        required = True
+    )
+
+    parser.add_argument(
+        '-p',
+        '--project_source_dir',
+        type=str,
+        help = 'Project source directory.',
+        required = True
+    )
+
+    parser.add_argument(
+        'list_file',
+        type=str,
+        nargs=1,
+        help = 'Test descriptor file',
+    )
+
+    parse_results = parser.parse_args()
+    build_dir = parse_results.build_dir
+    if build_dir is None or build_dir == '':
+        die("\"-b/--build_dir\" cannot be the empty string.")
+
+    source_dir = parse_results.source_dir
+    if source_dir is None or source_dir == '':
+        die("\"-c/--source_dir\" cannot be the empty string.")
+    source_dir = parse_results.source_dir
+
+    proj_source_dir = parse_results.project_source_dir
+    if proj_source_dir is None or proj_source_dir == '':
+        proj_source_dir = source_dir
+
+    context = cmake_helper.CMakeScriptContext(
+        build_dir=build_dir,
+        source_dir=source_dir,
+        project_source_dir=proj_source_dir,
+        list_file=parse_results.list_file[0]
+    )
+    return context
 
 if __name__ == "__main__":
-    test_directory = pathlib.Path(__file__).parent / "tests"
-    argc = len(sys.argv)
-    if argc > 2:
-        print("Too many arguments", file=sys.stderr)
-        sys.exit(1)
-    if argc < 2:
-        print("Too few arguments", file=sys.stderr)
-        sys.exit(1)
+     test_directory = pathlib.Path(__file__).parent / "tests"
+     # argc = len(sys.argv)
+     # if argc > 2:
+     #     print("Too many arguments", file=sys.stderr)
+     #     sys.exit(1)
+     # if argc < 2:
+     #     print("Too few arguments", file=sys.stderr)
+     #     sys.exit(1)
 
-    file_to_parse=sys.argv[1]
-    if not run_cmake_as_linter(file_to_parse):
-        print("Input file is not a valid CMake file", file=sys.stderr)
-        sys.exit(1)
-    
-    app_singleton = ApplicationSingleton()
-    parse_status = parse_file(file_to_parse, app_singleton)
+     # file_to_parse=pathlib.Path(sys.argv[1])
+     # if not run_cmake_as_linter(file_to_parse):
+     #     print("Input file is not a valid CMake file", file=sys.stderr)
+     #     sys.exit(1)
+     #
+     context = parse_args_into_context() 
+     app_singleton = ApplicationSingleton(context)
+     parse_status = parse_file(app_singleton)
 
-    if parse_status is None:
-        print("An error occurred while parsing file \"{}\".".format(file_to_parse), file=sys.stderr)
-        sys.exit(1)
+     if parse_status is None:
+         print("An error occurred while parsing file \"{}\".".format(context.list_file), file=sys.stderr)
+         sys.exit(1)
 
-    output_buffer = generate_file_contents(parse_status)
+     output_buffer = generate_file_contents(parse_status)
+     if test_directory.exists():
+         if not test_directory.is_dir():
+             print(
+                 "There exists something at path \"tests\", but it is not a directory",
+                 file=sys.stderr
+             )
+             sys.exit(1)
+         if not os.access(test_directory, os.W_OK):
+             print(
+                 "While the \"tests\" directory exists, You do not have write access to it."
+             )
+             sys.exit(1)
+     else:
+         test_directory.mkdir() 
 
-    if test_directory.exists():
-        if not test_directory.is_dir():
-            print(
-                "There exists something at path \"tests\", but it is not a directory",
-                file=sys.stderr
-            )
-            sys.exit(1)
-        if not os.access(test_directory, os.W_OK):
-            print(
-                "While the \"tests\" directory exists, You do not have write access to it."
-            )
-            sys.exit(1)
-    else:
-        test_directory.mkdir() 
-
-    test_file = test_directory / file_to_parse
-    with open(test_file, 'w') as file:
-        file.writelines(output_buffer)
-        #print("".join(output_buffer))
+     test_file = test_directory / context.list_file.name
+     with open(test_file, 'w') as file:
+         file.writelines(output_buffer)
