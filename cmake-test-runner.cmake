@@ -39,6 +39,10 @@ function(run_test)
     set(options "SKIP_GENERATE_FILE")
     set(oneValueArgs "TEST_SCRIPT_FILE")
     cmake_parse_arguments(run_test ${options} ${oneValueArgs} "" ${ARGN})
+ 
+    if(NOT run_test_TEST_SCRIPT_FILE)
+        message(FATAL_ERROR "TEST_SCRIPT_FILE was not specified.")
+    endif()
 
     get_filename_component(TEST_SCRIPT_FILENAME "${run_test_TEST_SCRIPT_FILE}" NAME)
 
@@ -48,7 +52,7 @@ function(run_test)
         #generate test file
         message(STATUS "Generating test file for \"${run_test_TEST_SCRIPT_FILE}\".")
         execute_process(
-            COMMAND "${Python_EXECUTABLE}" "${PYTHON_TEST_GENERATOR_SCRIPT_PATH}" "${run_test_TEST_SCRIPT_FILE}"
+		COMMAND "${Python_EXECUTABLE}" "${PYTHON_TEST_GENERATOR_SCRIPT_PATH}" "-b" "${CMAKE_BINARY_DIR}" "-c" "${CMAKE_SOURCE_DIR}" "-p" "${PROJECT_SOURCE_DIR}" "${run_test_TEST_SCRIPT_FILE}" 
             WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}"
             COMMAND_ERROR_IS_FATAL ANY
         )
