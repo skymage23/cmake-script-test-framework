@@ -20,8 +20,7 @@ class CMakeScriptContext:
         return context.list_file
     
     def resolve_cmake_current_list_dir(context):
-        temp = pathlib.Path(CMakeScriptContext.resolve_cmake_current_list_file(context))
-        return temp.parent.__str__()    
+        return context.parent.__str__()    
     
     
     def __init__(self,
@@ -34,6 +33,7 @@ class CMakeScriptContext:
         self.build_dir = pathlib.Path(build_dir)
         self.source_dir = pathlib.Path(source_dir)
         self.project_source_dir = pathlib.Path(project_source_dir)
+        self.current_list_dir = self.list_file.parent
 
         self.supported_builtin_vars = {
             "CMAKE_BUILD_DIR": CMakeScriptContext.resolve_cmake_build_dir,
@@ -46,7 +46,6 @@ class CMakeScriptContext:
         self.re_cmake_env_var_dereference = re.compile(R"^\$?ENV{")
 
     def resolve_var(self, varname):
-        temp = None
         if varname not in self.supported_builtin_vars:
             raise ValueError("\"{}\" is not a variable we are capable of resolving.".format(varname))
 
