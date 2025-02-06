@@ -20,7 +20,7 @@ class CMakeScriptContext:
         return context.list_file
     
     def resolve_cmake_current_list_dir(context):
-        return context.parent.__str__()    
+        return context.list_file.parent.__str__()    
     
     
     def __init__(self,
