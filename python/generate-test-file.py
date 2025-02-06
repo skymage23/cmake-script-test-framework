@@ -520,7 +520,7 @@ def parse_args_into_context():
         die("\"list_file\" is not a file.")
     
     if not run_cmake_as_linter(list_file, context.current_list_dir.__str__() ):
-        die("Input file is not a valid CMake file", file=sys.stderr)
+        die("Input file is not a valid CMake file")
 
     return context
 
