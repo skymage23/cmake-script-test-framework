@@ -163,12 +163,12 @@ def scan_for_include(parse_status, app_singleton):
     temp = None
     index_temp = parse_status.current_index
     str_temp = parse_status.lines[index_temp]
-
+ 
     if app_singleton.re_include.search(str_temp) is None:
         return False
     index_temp = str_temp.index('(')
     str_temp = (str_temp[index_temp + 1: -2]).strip()
- 
+
     temp = resolve_relative_include_path(parse_status, str_temp, app_singleton)  #Resolve relative paths.
     str_temp = pathlib.Path(temp).name
     
@@ -412,10 +412,11 @@ def generate_file_contents(parse_status):
         str_buffer.append("\n\n")
     return str_buffer
 
-def run_cmake_as_linter(filename):
+def run_cmake_as_linter(filename, working_dir):
     try:
         cmake_process = subprocess.run(
             ["cmake", "-P", filename],
+            cwd = working_dir,
             stderr = sys.stderr,
             stdout = sys.stdout,
             shell = False
@@ -474,6 +475,7 @@ def parse_args_into_context():
     )
 
     parse_results = parser.parse_args()
+    list_file = parse_results.list_file[0]
     build_dir = parse_results.build_dir
     if build_dir is None or build_dir == '':
         die("\"-b/--build_dir\" cannot be the empty string.")
@@ -491,8 +493,35 @@ def parse_args_into_context():
         build_dir=build_dir,
         source_dir=source_dir,
         project_source_dir=proj_source_dir,
-        list_file=parse_results.list_file[0]
+        list_file=list_file
     )
+    if not context.build_dir.exists():
+        die("\"build_dir\" does not exist.")
+
+    if not context.build_dir.is_dir():
+        die("\"build_dir\" is not a directory.")
+    
+    if not context.source_dir.exists():
+        die("\"source_dir\" does not exist.")
+
+    if not context.source_dir.is_dir():
+        die("\"source_dir\" is not a directory.")
+ 
+    if not context.project_source_dir.exists():
+        die("\"project_source_dir\" does not exist.")
+
+    if not context.project_source_dir.is_dir():
+        die("\"project_source_dir\" is not a directory.")
+    
+    if not context.list_file.exists():
+        die("\"list_file\" does not exist.")
+
+    if not context.list_file.is_file():
+        die("\"list_file\" is not a file.")
+    
+    if not run_cmake_as_linter(list_file, context.current_list_dir.__str__() ):
+        die("Input file is not a valid CMake file", file=sys.stderr)
+
     return context
 
 if __name__ == "__main__":
@@ -506,10 +535,7 @@ if __name__ == "__main__":
      #     sys.exit(1)
 
      # file_to_parse=pathlib.Path(sys.argv[1])
-     # if not run_cmake_as_linter(file_to_parse):
-     #     print("Input file is not a valid CMake file", file=sys.stderr)
-     #     sys.exit(1)
-     #
+     
      context = parse_args_into_context() 
      app_singleton = ApplicationSingleton(context)
      parse_status = parse_file(app_singleton)
