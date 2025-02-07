@@ -84,6 +84,13 @@ def die(string: str):
     print_err(string)
     sys.exit(1)
 
+def remove_cmake_escape_sequences(input):
+    #Hello:
+    input = input.replace("\u005c","\u005c\u005c") #0x005c: Unicode for "Reverse Solidus", or '\'
+                                                   #It was starting to be a pain trying to escape the backslashs.
+                                                   #Doing it this way was easier.
+    input = input.replace(" ", "\u005c ")
+    return input
 ##We need to able to resolve some common CMake variables ourselves:
 ##CMAKE_CURRENT_LIST_DIR
 ##CMAKE_BUILD_DIR
@@ -174,7 +181,12 @@ def scan_for_include(parse_status, app_singleton):
     
     #Quietly ignore the include of the dummy definitions:        
     if not CMAKE_TEST_FILENAME in str_temp:
-        parse_status.includes.append((parse_status.current_index, temp.__str__()))
+        parse_status.includes.append(
+            (
+                parse_status.current_index, 
+                remove_cmake_escape_sequences(temp.__str__())
+            )
+        )
     parse_status.current_index += 1
     return True
 
@@ -376,7 +388,7 @@ def generate_file_contents(parse_status):
 # Includes:
 #*****************\n""")
     for elem in parse_status.includes:
-        str_buffer.append("".join(["include(", elem[1], ")\n"]))
+        str_buffer.append("".join(["include(\"", elem[1], "\")\n"]))
         indices_to_ignore.append(elem[0])
     str_buffer.append("\n")
 
