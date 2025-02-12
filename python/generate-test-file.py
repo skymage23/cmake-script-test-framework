@@ -90,7 +90,6 @@ def strip_quotation_marks(input):
     temp_index2 = None
 
     temp_index = input.find('"')
-    print("input: {}\ntemp_index: {}".format(input, temp_index))
     if (temp_index < 0):
         retval = input
     else:
