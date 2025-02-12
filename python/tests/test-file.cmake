@@ -8,7 +8,7 @@
 #*****************
 # Includes:
 #*****************
-include(test-include.cmake)
+include("/home/cnugent/Documents/source_cd_dirs/nvme_1tb/cmake-script-test-framework/test-include.cmake")
 
 #************************
 # Command Definitions:

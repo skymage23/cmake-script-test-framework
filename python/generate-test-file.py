@@ -84,6 +84,22 @@ def die(string: str):
     print_err(string)
     sys.exit(1)
 
+def strip_quotation_marks(input):
+    #Hello
+    temp_index = None
+    temp_index2 = None
+
+    temp_index = input.find('"')
+    print("input: {}\ntemp_index: {}".format(input, temp_index))
+    if (temp_index < 0):
+        retval = input
+    else:
+        temp_index2=input.index('"') #If the second quotation mark doesn't exist, we have bigger problems.
+        retval = input[temp_index + 1: (len(input) - temp_index2 - 1)]
+
+    return retval 
+
+
 def remove_cmake_escape_sequences(input):
     #Hello:
     input = input.replace("\u005c","\u005c\u005c") #0x005c: Unicode for "Reverse Solidus", or '\'
@@ -167,6 +183,7 @@ def resolve_relative_include_path(parse_status, relative_path, app_singleton):
 def scan_for_include(parse_status, app_singleton):
     #We ignore "include(*/cmake-test.cmake)"
     CMAKE_TEST_FILENAME = "cmake-test.cmake"
+    have_quotes = False
     temp = None
     index_temp = parse_status.current_index
     str_temp = parse_status.lines[index_temp]
@@ -174,7 +191,9 @@ def scan_for_include(parse_status, app_singleton):
     if app_singleton.re_include.search(str_temp) is None:
         return False
     index_temp = str_temp.index('(')
+    
     str_temp = (str_temp[index_temp + 1: -2]).strip()
+    str_temp = strip_quotation_marks(str_temp)
 
     temp = resolve_relative_include_path(parse_status, str_temp, app_singleton)  #Resolve relative paths.
     str_temp = pathlib.Path(temp).name
