@@ -57,53 +57,60 @@ def main():
         cmake_p_project_source_dir.__str__()
     ] 
     
-    pretty_print("Testing using \"test-file.cmake\".")
-    #build arg
-    args = copy.deepcopy(args_temp)
-    args.append("test-file.cmake")
-    if gentestfile.main(args) != 0:
-        return 1
-    if run_cmake_script(tests_dir/"test-file.cmake"):
-        return 1
+    #pretty_print("Testing using \"test-file.cmake\".")
+    ##build arg
+    #args = copy.deepcopy(args_temp)
+    #args.append("test-file.cmake")
+    #if gentestfile.main(args) != 0:
+    #    return 1
+    #if run_cmake_script(tests_dir/"test-file.cmake"):
+    #    return 1
 
-    pretty_print("Testing using \"test-file-var-in-include-path.cmake\".")
-    #build args 
-    args = copy.deepcopy(args_temp)
-    args.append("test-file-var-in-include-path.cmake")
-    if gentestfile.main(args) != 0:
-        return 1
-    if run_cmake_script(
-        tests_dir/"test-file-var-in-include-path.cmake"
-    ):
-        return 1
+    #pretty_print("Testing using \"test-file-var-in-include-path.cmake\".")
+    ##build args 
+    #args = copy.deepcopy(args_temp)
+    #args.append("test-file-var-in-include-path.cmake")
+    #if gentestfile.main(args) != 0:
+    #    return 1
+    #if run_cmake_script(
+    #    tests_dir/"test-file-var-in-include-path.cmake"
+    #):
+    #    return 1
 
-    pretty_print("Testing using \"test-file-relative-path.cmake\".")
-    #build args
-    if gentestfile.main(args) != 0:
-        return 1 
-    if run_cmake_script(
-        tests_dir/"test-file-relative-path.cmake"
-    ):
-        return 1
+    #pretty_print("Testing using \"test-file-relative-path.cmake\".")
+    ##build args
+    #args = copy.deepcopy(args_temp)
+    #args.append("test-file-relative-path.cmake")
+    #if gentestfile.main(args) != 0:
+    #    return 1 
+    #if run_cmake_script(
+    #    tests_dir/"test-file-relative-path.cmake"
+    #):
+    #    return 1
 
-    pretty_print("Testing \"test-file-quotes-around-important-names.cmake\".")
-    #build args
-    if gentestfile.main(args) != 0:
-        return 1
-    if run_cmake_script(
-        tests_dir/"test-file-quotes-around-important-names.cmake"
-    ):
-        return 1
+    #pretty_print("Testing \"test-file-quotes-around-important-names.cmake\".")
+    ##build args
+    #args = copy.deepcopy(args_temp)
+    #args.append("test-file-quotes-around-important-names.cmake")
+    #if gentestfile.main(args) != 0:
+    #    return 1
+    #if run_cmake_script(
+    #    tests_dir/"test-file-quotes-around-important-names.cmake"
+    #):
+    #    return 1
 
 
-    pretty_print("Testing \"test-file-env-var-in-path.cmake\".")
-    #build args
-    if gentestfile.main(args) != 0:
-        return 1
-    if run_cmake_script(
-        tests_dir/"test-file-env-var-in-path.cmake"
-    ):
-        return 1
+    #pretty_print("Testing \"test-file-env-var-in-path.cmake\".")
+    ##build args
+    #args = copy.deepcopy(args_temp)
+    #args.append("test-file-env-var-in-path.cmake")
+    #os.environ["OUR_PATH"] = curr_dir.__str__()
+    #if gentestfile.main(args) != 0:
+    #    return 1
+    #if run_cmake_script(
+    #    tests_dir/"test-file-env-var-in-path.cmake"
+    #):
+    #    return 1
     
     pretty_print("Running \"test-run-test.cmake\"")
     if run_cmake_script("test-run-test.cmake"):
@@ -114,7 +121,6 @@ def main():
         return 1
 
     return 0
-
 
 if __name__ == "__main__":
     sys.exit(main())

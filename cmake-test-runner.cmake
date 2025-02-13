@@ -51,8 +51,12 @@ function(run_test)
     if((NOT run_test_SKIP_GENERATE_FILE) OR (NOT EXISTS "${TEST_FILE}"))
         #generate test file
         message(STATUS "Generating test file for \"${run_test_TEST_SCRIPT_FILE}\".")
+        message(STATUS "CMAKE_BINARY_DIR: ${CMAKE_BINARY_DIR}")
+        message(STATUS "CMAKE_SOURCE_DIR: ${CMAKE_SOURCE_DIR}")
+        message(STATUS "PROJECT_SOURCE_DIR: ${PROJECT_SOURCE_DIR}")
+        message(STATUS "TEST_SCRIPT_FILE: ${run_test_TEST_SCRIPT_FILE}")
         execute_process(
-		COMMAND "${Python_EXECUTABLE}" "${PYTHON_TEST_GENERATOR_SCRIPT_PATH}" "-b" "${CMAKE_BINARY_DIR}" "-c" "${CMAKE_SOURCE_DIR}" "-p" "${PROJECT_SOURCE_DIR}" "${run_test_TEST_SCRIPT_FILE}" 
+		COMMAND "${Python_EXECUTABLE}" "${PYTHON_TEST_GENERATOR_SCRIPT_PATH}" "-b" "${CMAKE_BINARY_DIR}" "-c" "${CMAKE_SOURCE_DIR}" "-p" "${PROJECT_SOURCE_DIR}" "${run_test_TEST_SCRIPT_FILE}"
             WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}"
             COMMAND_ERROR_IS_FATAL ANY
         )

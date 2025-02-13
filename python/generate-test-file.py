@@ -119,61 +119,50 @@ def remove_cmake_escape_sequences(input):
 
 def resolve_vars_in_filepath(filepath, app_singleton):
     retval = []    
-    separator = os.path.sep
-    exploded_path = filepath.split(separator) 
+    #separator = pathlib.Path.sep #This is what is screwing my over. Why?!
+    exploded_path = os.path.split(filepath) #This is the problem. Why isn't this doing shit? 
     for var in exploded_path:
-        #var = var.strip()
-        #if self.re_cmake_var_dereference.search(var) is None:
-        #    continue
-        
-        #ind_temp1 = var.index('$') + 1
-        #ind_temp2 = var.index('}')
-        #var = var[ind_temp1: -(len(var) - (ind_temp2))]
-
-        ##OK. Are we an environment variable or not.
-        #print(var)
-        #if self.re_cmake_env_var_dereference.search(var) is None:
-        #   retval = resolve_certain_cmake_vars(parse_status)            
-        #else: 
+        print("resolve_vars_in_filepath: var: {}".format(var))
         retval.append(app_singleton.context.resolve_vars(var))
-    return separator.join(retval)
+    return os.path.join(*retval)
 
 def resolve_relative_include_path(parse_status, relative_path, app_singleton):
     #Hello:
-    SELF_REFERENCE = '.'
-    PARENT_REFERENCE = ".."
-    separator = os.path.sep
-    elem_temp = None
-    exploded_path = None 
-    exploded_input_origin_dir_path = app_singleton.context.project_source_dir.__str__().split(separator)
-    dir_stack = []
+    #SELF_REFERENCE = '.'
+    #PARENT_REFERENCE = ".."
+    #separator = os.path.sep
+    #elem_temp = None
+    #exploded_path = None 
+    #exploded_input_origin_dir_path = app_singleton.context.project_source_dir.__str__().split(separator)
+    #dir_stack = []
 
-    relative_path = resolve_vars_in_filepath(relative_path, app_singleton)
+    relative_path = pathlib.Path(resolve_vars_in_filepath(relative_path, app_singleton))
+    relative_path.resolve()
+    return relative_path.__str__()
+   # exploded_path = relative_path.split(separator)
+   # #Handle the case of len(exploded_path) = 1:
+   # 
+   # #What if it is of the form?:
+   # #../hello/my/fellow/programmer
+   # if exploded_path[0] != '':
+   #     exploded_input_origin_dir_path.extend(exploded_path)
+   #     exploded_path = exploded_input_origin_dir_path
 
-    exploded_path = relative_path.split(separator)
-    #Handle the case of len(exploded_path) = 1:
-    
-    #What if it is of the form?:
-    #../hello/my/fellow/programmer
-    if exploded_path[0] != '':
-        exploded_input_origin_dir_path.extend(exploded_path)
-        exploded_path = exploded_input_origin_dir_path
+   # for i in range(0, len(exploded_path)):
+   #     elem_temp = exploded_path[i]
+   #     if(elem_temp == SELF_REFERENCE):
+   #         continue
+   #     elif(elem_temp == PARENT_REFERENCE):
+   #         if(len(dir_stack) == 1):
+   #             continue  #This mimics how filesystem backreferences work.
+   #                       #The lowest level backreference always refers to the current
+   #                       #directory itself.
+   #         dir_stack.pop()
+   #         continue
+   #     else:
+   #         dir_stack.append(elem_temp)
 
-    for i in range(0, len(exploded_path)):
-        elem_temp = exploded_path[i]
-        if(elem_temp == SELF_REFERENCE):
-            continue
-        elif(elem_temp == PARENT_REFERENCE):
-            if(len(dir_stack) == 1):
-                continue  #This mimics how filesystem backreferences work.
-                          #The lowest level backreference always refers to the current
-                          #directory itself.
-            dir_stack.pop()
-            continue
-        else:
-            dir_stack.append(elem_temp)
-
-    return separator.join(dir_stack)
+   # return separator.join(dir_stack)
 #
 # There is no need to account for syntax errors here as that
 # was already handled during the linting step.
@@ -370,7 +359,7 @@ def parse_file(app_singleton):
     check_passed = False
     parse_status = ParseStatus()
     try:
-        with open(context.list_file.__str__(), 'r') as file:
+        with open(app_singleton.context.list_file.__str__(), 'r') as file:
             parse_status.lines = file.readlines()
     except FileNotFoundError:
         print("Test descriptor file \"{}\" does not exist.".format(app_singleton.context.list_file.__str__()), file=sys.stderr)
@@ -462,7 +451,7 @@ def run_cmake_as_linter(filename, working_dir):
         return False
     return True
 
-def parse_args_into_context():
+def parse_args_into_context(args):
     context = None
     build_dir = None
     source_dir = None
@@ -504,15 +493,17 @@ def parse_args_into_context():
         help = 'Test descriptor file',
     )
 
-    parse_results = parser.parse_args()
+    parse_results = parser.parse_args(args)
     list_file = parse_results.list_file[0]
     build_dir = parse_results.build_dir
     if build_dir is None or build_dir == '':
-        die("\"-b/--build_dir\" cannot be the empty string.")
+        print_err("\"-b/--build_dir\" cannot be the empty string.")
+        return 1, None
 
     source_dir = parse_results.source_dir
     if source_dir is None or source_dir == '':
-        die("\"-c/--source_dir\" cannot be the empty string.")
+        print_err("\"-c/--source_dir\" cannot be the empty string.")
+        return 1, None
     source_dir = parse_results.source_dir
 
     proj_source_dir = parse_results.project_source_dir
@@ -526,53 +517,57 @@ def parse_args_into_context():
         list_file=list_file
     )
     if not context.build_dir.exists():
-        die("\"build_dir\" does not exist.")
+        print_err("\"build_dir\" does not exist.")
+        return 1, None
 
     if not context.build_dir.is_dir():
-        die("\"build_dir\" is not a directory.")
+        print_err("\"build_dir\" is not a directory.")
+        return 1, None
     
     if not context.source_dir.exists():
-        die("\"source_dir\" does not exist.")
+        print_err("\"source_dir\" does not exist.")
+        return 1, None
 
     if not context.source_dir.is_dir():
-        die("\"source_dir\" is not a directory.")
+        print_err("\"source_dir\" is not a directory.")
+        return 1, None
  
     if not context.project_source_dir.exists():
-        die("\"project_source_dir\" does not exist.")
+        print_err("\"project_source_dir\" does not exist.")
+        return 1, None
 
     if not context.project_source_dir.is_dir():
-        die("\"project_source_dir\" is not a directory.")
+        print_err("\"project_source_dir\" is not a directory.")
+        return 1, None
     
     if not context.list_file.exists():
-        die("\"list_file\" does not exist.")
+        print_err("\"list_file\" does not exist.")
+        return 1, None
 
     if not context.list_file.is_file():
-        die("\"list_file\" is not a file.")
+        print_err("\"list_file\" is not a file.")
+        return 1, None
     
     if not run_cmake_as_linter(list_file, context.current_list_dir.__str__() ):
-        die("Input file is not a valid CMake file")
+        print_err("Input file is not a valid CMake file")
+        return 1, None
 
-    return context
+    return 0, context
 
-if __name__ == "__main__":
+def main(args):
      test_directory = pathlib.Path(__file__).parent / "tests"
-     # argc = len(sys.argv)
-     # if argc > 2:
-     #     print("Too many arguments", file=sys.stderr)
-     #     sys.exit(1)
-     # if argc < 2:
-     #     print("Too few arguments", file=sys.stderr)
-     #     sys.exit(1)
-
-     # file_to_parse=pathlib.Path(sys.argv[1])
      
-     context = parse_args_into_context() 
+     
+     errcode, context = parse_args_into_context(args)
+     if(errcode != 0):
+         return 1
+
      app_singleton = ApplicationSingleton(context)
      parse_status = parse_file(app_singleton)
 
      if parse_status is None:
          print("An error occurred while parsing file \"{}\".".format(context.list_file), file=sys.stderr)
-         sys.exit(1)
+         return 1
 
      output_buffer = generate_file_contents(parse_status)
      if test_directory.exists():
@@ -581,15 +576,20 @@ if __name__ == "__main__":
                  "There exists something at path \"tests\", but it is not a directory",
                  file=sys.stderr
              )
-             sys.exit(1)
+             return 1
          if not os.access(test_directory, os.W_OK):
              print(
                  "While the \"tests\" directory exists, You do not have write access to it."
              )
-             sys.exit(1)
+             return 1
      else:
          test_directory.mkdir() 
 
      test_file = test_directory / context.list_file.name
      with open(test_file, 'w') as file:
          file.writelines(output_buffer)
+     return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))
