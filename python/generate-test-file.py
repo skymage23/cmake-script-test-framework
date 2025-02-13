@@ -492,7 +492,6 @@ def parse_args_into_context(args):
         help = 'Test descriptor file',
     )
 
-    print(args)
     parse_results = parser.parse_args(args)
     list_file = parse_results.list_file[0]
     build_dir = parse_results.build_dir
