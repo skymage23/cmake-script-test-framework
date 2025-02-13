@@ -31,17 +31,21 @@ function(run_test)
         return()
     endif()
 
-    if(${ARGC} GREATER 3)
+    if(${ARGC} GREATER 5)
         message(SEND_ERROR "\"run_test\": Too many arguments.")
         return()
     endif()
 
     set(options "SKIP_GENERATE_FILE")
-    set(oneValueArgs "TEST_SCRIPT_FILE")
+    set(oneValueArgs "TEST_SCRIPT_FILE" "PROJECT_SOURCE_DIR")
     cmake_parse_arguments(run_test ${options} ${oneValueArgs} "" ${ARGN})
  
     if(NOT run_test_TEST_SCRIPT_FILE)
         message(FATAL_ERROR "TEST_SCRIPT_FILE was not specified.")
+    endif()
+
+    if(NOT run_test_PROJECT_SOURCE_DIR)
+
     endif()
 
     get_filename_component(TEST_SCRIPT_FILENAME "${run_test_TEST_SCRIPT_FILE}" NAME)
@@ -49,14 +53,25 @@ function(run_test)
     set(TEST_FILE "${GENERATED_TEST_DIR_PATH}/${TEST_SCRIPT_FILENAME}")
     
     if((NOT run_test_SKIP_GENERATE_FILE) OR (NOT EXISTS "${TEST_FILE}"))
+        set(cmd_list "")
+        list(APPEND cmd_list "${Python_EXECUTABLE}")
+        list(APPEND cmd_list "${PYTHON_TEST_GENERATOR_SCRIPT_PATH}")
+        list(APPEND cmd_list "-b" "${CMAKE_BINARY_DIR}")
+        list(APPEND cmd_list "-c" "${CMAKE_SOURCE_DIR}")
+
+        if(run_test_PROJECT_SOURCE_DIR)
+            #Hello:
+            list(APPEND cmd_list "-p" "${run_test_PROJECT_SOURCE_DIR}")
+        endif()
+        list(APPEND cmd_list "${run_test_TEST_SCRIPT_FILE}") 
+        
+        foreach(str  ${cmd_list})
+            message(STATUS ${str})
+        endforeach()
+
         #generate test file
-        message(STATUS "Generating test file for \"${run_test_TEST_SCRIPT_FILE}\".")
-        message(STATUS "CMAKE_BINARY_DIR: ${CMAKE_BINARY_DIR}")
-        message(STATUS "CMAKE_SOURCE_DIR: ${CMAKE_SOURCE_DIR}")
-        message(STATUS "PROJECT_SOURCE_DIR: ${PROJECT_SOURCE_DIR}")
-        message(STATUS "TEST_SCRIPT_FILE: ${run_test_TEST_SCRIPT_FILE}")
         execute_process(
-		COMMAND "${Python_EXECUTABLE}" "${PYTHON_TEST_GENERATOR_SCRIPT_PATH}" "-b" "${CMAKE_BINARY_DIR}" "-c" "${CMAKE_SOURCE_DIR}" "-p" "${PROJECT_SOURCE_DIR}" "${run_test_TEST_SCRIPT_FILE}"
+		    COMMAND ${cmd_list}
             WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}"
             COMMAND_ERROR_IS_FATAL ANY
         )

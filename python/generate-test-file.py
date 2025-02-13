@@ -482,8 +482,7 @@ def parse_args_into_context(args):
         '-p',
         '--project_source_dir',
         type=str,
-        help = 'Project source directory.',
-        required = True
+        help = 'Project source directory.'
     )
 
     parser.add_argument(
@@ -493,6 +492,7 @@ def parse_args_into_context(args):
         help = 'Test descriptor file',
     )
 
+    print(args)
     parse_results = parser.parse_args(args)
     list_file = parse_results.list_file[0]
     build_dir = parse_results.build_dir
@@ -592,4 +592,4 @@ def main(args):
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv))
+    sys.exit(main(sys.argv[1:]))
