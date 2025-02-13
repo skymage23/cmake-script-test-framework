@@ -79,6 +79,8 @@ def main():
 
     pretty_print("Testing using \"test-file-relative-path.cmake\".")
     #build args
+    args = copy.deepcopy(args_temp)
+    args.append("test-file-relative-path.cmake")
     if gentestfile.main(args) != 0:
         return 1 
     if run_cmake_script(
@@ -88,6 +90,8 @@ def main():
 
     pretty_print("Testing \"test-file-quotes-around-important-names.cmake\".")
     #build args
+    args = copy.deepcopy(args_temp)
+    args.append("test-file-quotes-around-important-names.cmake")
     if gentestfile.main(args) != 0:
         return 1
     if run_cmake_script(
@@ -98,6 +102,9 @@ def main():
 
     pretty_print("Testing \"test-file-env-var-in-path.cmake\".")
     #build args
+    args = copy.deepcopy(args_temp)
+    args.append("test-file-env-var-in-path.cmake")
+    os.environ["OUR_PATH"] = curr_dir.__str__()
     if gentestfile.main(args) != 0:
         return 1
     if run_cmake_script(
@@ -108,13 +115,21 @@ def main():
     pretty_print("Running \"test-run-test.cmake\"")
     if run_cmake_script("test-run-test.cmake"):
         return 1
+    
+    pretty_print("Running \"test-run-test-proj-src-dir-arg.cmake\"")
+    if run_cmake_script("test-run-test-proj-src-dir-arg.cmake"):
+        return 1
  
     pretty_print("Running \"test-run-test-skip-gen-file.cmake\"")
     if run_cmake_script("test-run-test-skip-gen-file.cmake"):
         return 1
 
-    return 0
+    pretty_print("Running \"test-run-test-skip-gen-file-proj-src-dir-arg.cmake\"")
+    if run_cmake_script("test-run-test-skip-gen-file-proj-src-dir-arg.cmake"):
+        return 1
 
+
+    return 0
 
 if __name__ == "__main__":
     sys.exit(main())
