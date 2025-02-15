@@ -1,0 +1,10 @@
+include("cmake-test.cmake")
+macro(setup)
+    message(STATUS "I am the setup macro in a file with no teardown macrk.")
+endmacro()
+add_setup_macro(MACRO_NAME setup)
+
+macro(test)
+    message(STATUS "I am the test in a file with no teardown macro, but I have a setup macro.")
+endmacro()
+add_test_macro(MACRO_NAME test)

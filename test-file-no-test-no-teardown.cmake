@@ -1,0 +1,6 @@
+include("cmake-test.cmake")
+macro(setup)
+    message(STATUS "I am the setup macro in a file with no test macros.")
+    message(STATUS "I should not be executed. If you see me, there is a bug in the code.")
+endmacro()
+add_setup_macro(MACRO_NAME setup)

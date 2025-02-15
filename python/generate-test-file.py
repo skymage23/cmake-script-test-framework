@@ -273,6 +273,7 @@ def scan_for_add_setup_macro(parse_status, app_singleton):
     index_temp1 = str_temp.index('(')
     str_temp = (str_temp[index_temp1 + 1:-2]).strip()
     str_temp = (str_temp.split()[1])
+    str_temp = strip_quotation_marks(str_temp)
     parse_status.setup_macro = str_temp
     parse_status.current_index += 1
 
@@ -298,6 +299,7 @@ def scan_for_add_teardown_macro(parse_status, app_singleton):
     index_temp1 = str_temp.index('(')
     str_temp = (str_temp[index_temp1 + 1:-2]).strip()
     str_temp = (str_temp.split()[1])
+    str_temp = strip_quotation_marks(str_temp)
     parse_status.teardown_macro = str_temp
     parse_status.current_index += 1
 
@@ -320,6 +322,7 @@ def scan_for_add_test_macro(parse_status, app_singleton):
     arr_temp = str_temp.split()
 
     macro_name = arr_temp[1]
+    macro_name = strip_quotation_marks(macro_name)
     if len(arr_temp) < TOTAL_POSSIBLE_ARGUMENTS:
         test_group = macro_name
     else:
@@ -424,10 +427,13 @@ def generate_file_contents(parse_status):
 #*************************\n""".format(test_group)
 )
         #Hello:
-        str_buffer.append("{}()\n".format(parse_status.setup_macro))
+        if(parse_status.setup_macro is not None):
+            str_buffer.append("{}()\n".format(parse_status.setup_macro))
         for test in parse_status.test_groups[test_group].keys():
             str_buffer.append("{}()\n".format(test))
-        str_buffer.append("{}()".format(parse_status.teardown_macro))
+
+        if(parse_status.teardown_macro is not None):
+            str_buffer.append("{}()".format(parse_status.teardown_macro))
         str_buffer.append("\n\n")
     return str_buffer
 

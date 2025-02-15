@@ -111,7 +111,110 @@ def main():
         tests_dir/"test-file-env-var-in-path.cmake"
     ):
         return 1
+
+
+    pretty_print("Testing \"test-file-no-setup-no-teardown.cmake\".")
+    #build args
+    args = copy.deepcopy(args_temp)
+    args.append("test-file-no-setup-no-teardown.cmake")
+    os.environ["OUR_PATH"] = curr_dir.__str__()
+    if gentestfile.main(args) != 0:
+        return 1
+    if run_cmake_script(
+        tests_dir/"test-file-no-setup-no-teardown.cmake"
+    ):
+        return 1
+
+
+    pretty_print("Testing \"test-file-no-setup.cmake\".")
+    #build args
+    args = copy.deepcopy(args_temp)
+    args.append("test-file-no-setup.cmake")
+    os.environ["OUR_PATH"] = curr_dir.__str__()
+    if gentestfile.main(args) != 0:
+        return 1
+    if run_cmake_script(
+        tests_dir/"test-file-no-setup.cmake"
+    ):
+        return 1
     
+
+    pretty_print("Testing \"test-file-no-teardown.cmake\".")
+    #build args
+    args = copy.deepcopy(args_temp)
+    args.append("test-file-no-teardown.cmake")
+    os.environ["OUR_PATH"] = curr_dir.__str__()
+    if gentestfile.main(args) != 0:
+        return 1
+    if run_cmake_script(
+        tests_dir/"test-file-no-teardown.cmake"
+    ):
+        return 1
+
+    pretty_print("Testing \"test-file-no-test-no-setup-no-teardown.cmake\".")
+    #build args
+    args = copy.deepcopy(args_temp)
+    args.append("test-file-no-test-no-setup-no-teardown.cmake")
+    os.environ["OUR_PATH"] = curr_dir.__str__()
+    if gentestfile.main(args) != 0:
+        return 1
+    if run_cmake_script(
+        tests_dir/"test-file-no-test-no-setup-no-teardown.cmake"
+    ):
+        return 1
+    
+
+    pretty_print("Testing \"test-file-no-test-no-setup.cmake\".")
+    #build args
+    args = copy.deepcopy(args_temp)
+    args.append("test-file-no-test-no-setup.cmake")
+    os.environ["OUR_PATH"] = curr_dir.__str__()
+    if gentestfile.main(args) != 0:
+        return 1
+    if run_cmake_script(
+        tests_dir/"test-file-no-test-no-setup.cmake"
+    ):
+        return 1
+    
+
+    pretty_print("Testing \"test-file-no-test-no-teardown.cmake\".")
+    #build args
+    args = copy.deepcopy(args_temp)
+    args.append("test-file-no-test-no-teardown.cmake")
+    os.environ["OUR_PATH"] = curr_dir.__str__()
+    if gentestfile.main(args) != 0:
+        return 1
+    if run_cmake_script(
+        tests_dir/"test-file-no-test-no-teardown.cmake"
+    ):
+        return 1
+
+
+    pretty_print("Testing \"test-file-no-test.cmake\".")
+    #build args
+    args = copy.deepcopy(args_temp)
+    args.append("test-file-no-test.cmake")
+    os.environ["OUR_PATH"] = curr_dir.__str__()
+    if gentestfile.main(args) != 0:
+        return 1
+    if run_cmake_script(
+        tests_dir/"test-file-no-test.cmake"
+    ):
+        return 1
+
+
+    pretty_print("Testing \"test-file-just-a-comment.cmake\".")
+    #build args
+    args = copy.deepcopy(args_temp)
+    args.append("test-file-just-a-comment.cmake")
+    os.environ["OUR_PATH"] = curr_dir.__str__()
+    if gentestfile.main(args) != 0:
+        return 1
+    if run_cmake_script(
+        tests_dir/"test-file-just-a-comment.cmake"
+    ):
+        return 1
+
     pretty_print("Running \"test-run-test.cmake\"")
     if run_cmake_script("test-run-test.cmake"):
         return 1

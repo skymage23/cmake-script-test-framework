@@ -1,0 +1,5 @@
+include("cmake-test.cmake")
+macro(test)
+    message(STATUS "I am the test in a file with no setup macro and no teardown macro.")
+endmacro()
+add_test_macro(MACRO_NAME "test")

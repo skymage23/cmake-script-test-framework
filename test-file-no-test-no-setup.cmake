@@ -1,0 +1,6 @@
+include("cmake-test.cmake")
+macro(teardown)
+    message(STATUS "I am the teardown macro in a file with no test macros and no setup macro.")
+    message(STATUS "I should never be executed. If you see this message, there is a bug in the code.")
+endmacro()
+add_teardown_macro(MACRO_NAME teardown)
