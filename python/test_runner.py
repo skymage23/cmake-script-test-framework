@@ -215,6 +215,32 @@ def main():
     ):
         return 1
 
+
+    pretty_print("Testing \"test-file-dot-backreference-in-filepath.cmake\".")
+    #build args
+    args = copy.deepcopy(args_temp)
+    args.append("test-file-dot-backreference-in-filepath.cmake")
+    os.environ["OUR_PATH"] = curr_dir.__str__()
+    if gentestfile.main(args) != 0:
+        return 1
+    if run_cmake_script(
+        tests_dir/"test-file-dot-backreference-in-filepath.cmake"
+    ):
+        return 1
+
+
+    pretty_print("Testing \"test-file-dot-reference-in-filepath.cmake\".")
+    #build args
+    args = copy.deepcopy(args_temp)
+    args.append("test-file-dot-reference-in-filepath.cmake")
+    os.environ["OUR_PATH"] = curr_dir.__str__()
+    if gentestfile.main(args) != 0:
+        return 1
+    if run_cmake_script(
+        tests_dir/"test-file-dot-reference-in-filepath.cmake"
+    ):
+        return 1
+
     pretty_print("Running \"test-run-test.cmake\"")
     if run_cmake_script("test-run-test.cmake"):
         return 1
