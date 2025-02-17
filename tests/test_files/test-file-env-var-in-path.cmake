@@ -1,5 +1,5 @@
-include ("${CMAKE_CURRENT_LIST_DIR}/./cmake-test.cmake")
-include("${CMAKE_CURRENT_LIST_DIR}/./test-include.cmake")
+include ($ENV{CMAKE_TEST_DIR}/cmake-test.cmake)
+include($ENV{OUR_PATH}/test-include.cmake)
 function(am_i_a_bro)
     message(STATUS "Yes.")
 endfunction()

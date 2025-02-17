@@ -8,7 +8,7 @@
 #*****************
 # Includes:
 #*****************
-include("test-include.cmake")
+include("/mnt/samsung_nvme_1tb/source_cd_dirs/cmake-script-test-framework/tests/test_runners/../test_files/test-include.cmake")
 
 #************************
 # Command Definitions:

@@ -1,5 +1,5 @@
-include (python/../cmake-test.cmake)
-include(./test-include.cmake)
+include ("${CMAKE_CURRENT_LIST_DIR}/../../cmake-test.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/test_helper_dir/../test-include.cmake")
 function(am_i_a_bro)
     message(STATUS "Yes.")
 endfunction()

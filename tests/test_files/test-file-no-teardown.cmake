@@ -1,4 +1,4 @@
-include("cmake-test.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/../../cmake-test.cmake")
 macro(setup)
     message(STATUS "I am the setup macro in a file with no teardown macrk.")
 endmacro()

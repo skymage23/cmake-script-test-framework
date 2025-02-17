@@ -106,16 +106,6 @@ def remove_cmake_escape_sequences(input):
                                                    #Doing it this way was easier.
     input = input.replace(" ", "\u005c ")
     return input
-##We need to able to resolve some common CMake variables ourselves:
-##CMAKE_CURRENT_LIST_DIR
-##CMAKE_BUILD_DIR
-##CMAKE_SOURCE_DIR
-#def resolve_certain_cmake_vars(parse_status):
-#    raise NotImplemented()
-#
-#def resolve_environment_vars():
-#    raise NotImplemented()
-#
 
 def resolve_vars_in_filepath(filepath, app_singleton):
     retval = []    
@@ -127,51 +117,13 @@ def resolve_vars_in_filepath(filepath, app_singleton):
     return os.path.join(*retval)
 
 def resolve_relative_include_path(parse_status, relative_path, app_singleton):
-    #Hello:
-    #SELF_REFERENCE = '.'
-    #PARENT_REFERENCE = ".."
-    #separator = os.path.sep
-    #elem_temp = None
-    #exploded_path = None 
-    #exploded_input_origin_dir_path = app_singleton.context.project_source_dir.__str__().split(separator)
-    #dir_stack = []
-
     relative_path = pathlib.Path(resolve_vars_in_filepath(relative_path, app_singleton))
     relative_path.resolve()
     return relative_path.__str__()
-   # exploded_path = relative_path.split(separator)
-   # #Handle the case of len(exploded_path) = 1:
-   # 
-   # #What if it is of the form?:
-   # #../hello/my/fellow/programmer
-   # if exploded_path[0] != '':
-   #     exploded_input_origin_dir_path.extend(exploded_path)
-   #     exploded_path = exploded_input_origin_dir_path
-
-   # for i in range(0, len(exploded_path)):
-   #     elem_temp = exploded_path[i]
-   #     if(elem_temp == SELF_REFERENCE):
-   #         continue
-   #     elif(elem_temp == PARENT_REFERENCE):
-   #         if(len(dir_stack) == 1):
-   #             continue  #This mimics how filesystem backreferences work.
-   #                       #The lowest level backreference always refers to the current
-   #                       #directory itself.
-   #         dir_stack.pop()
-   #         continue
-   #     else:
-   #         dir_stack.append(elem_temp)
-
-   # return separator.join(dir_stack)
-#
-# There is no need to account for syntax errors here as that
-# was already handled during the linting step.
-#
 
 def scan_for_include(parse_status, app_singleton):
     #We ignore "include(*/cmake-test.cmake)"
     CMAKE_TEST_FILENAME = "cmake-test.cmake"
-    have_quotes = False
     temp = None
     index_temp = parse_status.current_index
     str_temp = parse_status.lines[index_temp]
@@ -182,8 +134,10 @@ def scan_for_include(parse_status, app_singleton):
     
     str_temp = (str_temp[index_temp + 1: -2]).strip()
     str_temp = strip_quotation_marks(str_temp)
-
+    
+    print("scan_for_include: {}".format(str_temp))
     temp = resolve_relative_include_path(parse_status, str_temp, app_singleton)  #Resolve relative paths.
+    print("scan_for_includes(absolute): {}".format(temp))
     str_temp = pathlib.Path(temp).name
     
     #Quietly ignore the include of the dummy definitions:        
