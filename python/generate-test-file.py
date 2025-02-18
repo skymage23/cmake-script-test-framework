@@ -9,7 +9,6 @@ import pathlib
 import re
 import subprocess
 import sys
-
 import cmake_helper
 
 class TestDescriptorFileParseError(RuntimeError):
@@ -108,17 +107,32 @@ def remove_cmake_escape_sequences(input):
     return input
 
 def resolve_vars_in_filepath(filepath, app_singleton):
+    temp = None
+    retval_prefix = []
     retval = []    
     #separator = pathlib.Path.sep #This is what is screwing my over. Why?!
-    exploded_path = os.path.split(filepath) #This is the problem. Why isn't this doing shit? 
+    if(os.name == 'nt'):
+        #Windows. So, we need to trim off the drive:
+        temp = os.path.splitdrive(filepath)
+        filepath = temp[1]
+        retval_prefix.append(temp[0])
+
+        
+
+    exploded_path = filepath.split(os.sep) #This is the problem. Why isn't this doing shit? 
+    if exploded_path[0] == "":
+        retval_prefix.append(os.sep)
+        exploded_path = exploded_path[1:] 
     for var in exploded_path:
         print("resolve_vars_in_filepath: var: {}".format(var))
         retval.append(app_singleton.context.resolve_vars(var))
+
+    retval = retval_prefix + retval
     return os.path.join(*retval)
 
-def resolve_relative_include_path(parse_status, relative_path, app_singleton):
+def resolve_relative_include_path(relative_path, app_singleton):
     relative_path = pathlib.Path(resolve_vars_in_filepath(relative_path, app_singleton))
-    relative_path.resolve()
+    relative_path = relative_path.resolve()
     return relative_path.__str__()
 
 def scan_for_include(parse_status, app_singleton):
@@ -136,7 +150,7 @@ def scan_for_include(parse_status, app_singleton):
     str_temp = strip_quotation_marks(str_temp)
     
     print("scan_for_include: {}".format(str_temp))
-    temp = resolve_relative_include_path(parse_status, str_temp, app_singleton)  #Resolve relative paths.
+    temp = resolve_relative_include_path(str_temp, app_singleton)  #Resolve relative paths.
     print("scan_for_includes(absolute): {}".format(temp))
     str_temp = pathlib.Path(temp).name
     

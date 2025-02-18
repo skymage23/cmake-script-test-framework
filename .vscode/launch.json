@@ -6,6 +6,13 @@
             "request": "launch",
             "program": "${workspaceFolder}/python/test_runner.py",
             "console": "integratedTerminal"
+        },
+        {
+            "name": "Python Debugger: Debug unittests",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/tests/test_runners/test_runner_lib/main.py",
+            "console": "integratedTerminal"
         }
     ]
 }
