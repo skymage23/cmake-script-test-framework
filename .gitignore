@@ -5,3 +5,6 @@ python/tests/test-*
 */*.swp
 */trial.cmake
 trial.cmake
+__pycache__
+*.pyc
+**/tests/test-*.cmake
