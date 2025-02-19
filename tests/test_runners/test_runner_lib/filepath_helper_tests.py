@@ -180,6 +180,7 @@ class TestFilepathHelper(unittest.TestCase):
         )
        self.assertEqual(output, "home\\/admin\\/documents\\/test_file")       
     
+    @unittest.skipIf(os.name != 'nt', reason="Only Windows uses UNC pathing.")
     def test_join_as_filepath_force_posix_false_unc(self):
        force_posix = False
        drive_letter = ''
@@ -191,6 +192,7 @@ class TestFilepathHelper(unittest.TestCase):
         )
        self.assertEqual(output, "home\\admin\\documents\\test_file")       
 
+    @unittest.skipIf(os.name != 'nt', reason="Only Windows uses UNC pathing.")
     def test_join_as_filepath_test_with_backslash_force_posix_false_unc(self):
        force_posix = False
        drive_letter = ''
@@ -203,6 +205,7 @@ class TestFilepathHelper(unittest.TestCase):
        self.assertEqual(output, "home/\\admin/\\documents/\\test_file")       
     
     #Ignore drive letter when "root" is not expected.
+    @unittest.skipIf(os.name != 'nt', reason="Only Windows uses UNC pathing.")
     def test_join_as_filepath_force_posix_false_with_drive_letter_unc(self):
        force_posix = False
        drive_letter = 'C:'
@@ -214,6 +217,7 @@ class TestFilepathHelper(unittest.TestCase):
         )
        self.assertEqual(output, "home\\admin\\documents\\test_file")       
 
+    @unittest.skipIf(os.name != 'nt', reason="Only Windows uses UNC pathing.")
     def test_join_as_filepath_test_with_backslash_force_posix_false_unc(self):
        force_posix = False
        drive_letter = 'C:'
@@ -259,7 +263,8 @@ class TestFilepathHelper(unittest.TestCase):
            force_posix=force_posix
         )
        self.assertEqual(output, "/home\\/admin\\/documents\\/test_file")       
-    
+
+    @unittest.skipIf(os.name != 'nt', reason="Only Windows uses UNC pathing.")
     def test_join_as_filepath_force_posix_false_rooted_unc(self):
        force_posix = False
        drive_letter = ''
@@ -271,6 +276,8 @@ class TestFilepathHelper(unittest.TestCase):
         )
        self.assertEqual(output, "\\home\\admin\\documents\\test_file")       
 
+
+    @unittest.skipIf(os.name != 'nt', reason="Only Windows uses UNC pathing.")
     def test_join_as_filepath_test_with_backslash_force_posix_false_rooted_unc(self):
        force_posix = False
        drive_letter = ''
@@ -283,6 +290,8 @@ class TestFilepathHelper(unittest.TestCase):
        self.assertEqual(output, "\\home/\\admin/\\documents/\\test_file")       
     
     #Ignore drive letter when "root" is not expected.
+
+    @unittest.skipIf(os.name != 'nt', reason="Only Windows uses UNC pathing.")
     def test_join_as_filepath_force_posix_false_with_drive_letter_rooted_unc(self):
        force_posix = False
        drive_letter = 'C:'
@@ -294,6 +303,8 @@ class TestFilepathHelper(unittest.TestCase):
         )
        self.assertEqual(output, "C:\\home\\admin\\documents\\test_file")       
 
+
+    @unittest.skipIf(os.name != 'nt', reason="Only Windows uses UNC pathing.")
     def test_join_as_filepath_test_with_backslash_force_posix_false_rooted_unc(self):
        force_posix = False
        drive_letter = 'C:'
