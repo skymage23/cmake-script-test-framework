@@ -7,4 +7,4 @@ python/tests/test-*
 trial.cmake
 __pycache__
 *.pyc
-**/tests/test-*.cmake
+python/tests/*.cmake
