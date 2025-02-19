@@ -146,5 +146,164 @@ class TestFilepathHelper(unittest.TestCase):
         self.assertIsNone(drive_letter)
         self.assertEqual(output, expected_output)
 
+    def test_join_as_filepath_posix(self):
+       force_posix = True #POSIX behavior is optional on Windows, but this forces it.
+       sample_arr = ['home', 'admin', 'documents', 'test_file']
+       output = fp_helper.join_as_filepath(sample_arr, force_posix=force_posix)
+       self.assertEqual(output, "home/admin/documents/test_file")       
+
+    def test_join_as_filepath_test_with_forward_slash_posix(self):
+       force_posix = True #POSIX behavior is optional on Windows, but this forces it.
+       sample_arr = ['home\\', 'admin\\', 'documents\\', 'test_file']
+       output = fp_helper.join_as_filepath(sample_arr, force_posix=force_posix)
+       self.assertEqual(output, "home\\/admin\\/documents\\/test_file")       
+    
+    def test_join_as_filepath_with_drive_letter_posix(self):
+       drive_letter="D:"
+       force_posix = True #POSIX behavior is optional on Windows, but this forces it.
+       sample_arr = ['home', 'admin', 'documents', 'test_file']
+       output = fp_helper.join_as_filepath(
+           sample_arr,
+           drive_letter = drive_letter,
+           force_posix=force_posix
+       )
+       self.assertEqual(output, "home/admin/documents/test_file")       
+
+    def test_join_as_filepath_test_with_forward_slash_with_drive_letter_posix(self):
+       drive_letter="D:"
+       force_posix = True #POSIX behavior is optional on Windows, but this forces it.
+       sample_arr = ['home\\', 'admin\\', 'documents\\', 'test_file']
+       output = fp_helper.join_as_filepath(
+           sample_arr,
+           drive_letter = drive_letter,
+           force_posix=force_posix
+        )
+       self.assertEqual(output, "home\\/admin\\/documents\\/test_file")       
+    
+    def test_join_as_filepath_force_posix_false_unc(self):
+       force_posix = False
+       drive_letter = ''
+       sample_arr = ['home', 'admin', 'documents', 'test_file']
+       output = fp_helper.join_as_filepath(
+           sample_arr,
+           drive_letter=drive_letter,
+           force_posix=force_posix
+        )
+       self.assertEqual(output, "home\\admin\\documents\\test_file")       
+
+    def test_join_as_filepath_test_with_backslash_force_posix_false_unc(self):
+       force_posix = False
+       drive_letter = ''
+       sample_arr = ['home/', 'admin/', 'documents/', 'test_file']
+       output = fp_helper.join_as_filepath(
+           sample_arr,
+           drive_letter=drive_letter,
+           force_posix=force_posix
+        )
+       self.assertEqual(output, "home/\\admin/\\documents/\\test_file")       
+    
+    #Ignore drive letter when "root" is not expected.
+    def test_join_as_filepath_force_posix_false_with_drive_letter_unc(self):
+       force_posix = False
+       drive_letter = 'C:'
+       sample_arr = ['home', 'admin', 'documents', 'test_file']
+       output = fp_helper.join_as_filepath(
+           sample_arr,
+           drive_letter=drive_letter,
+           force_posix=force_posix
+        )
+       self.assertEqual(output, "home\\admin\\documents\\test_file")       
+
+    def test_join_as_filepath_test_with_backslash_force_posix_false_unc(self):
+       force_posix = False
+       drive_letter = 'C:'
+       sample_arr = ['home/', 'admin/', 'documents/', 'test_file']
+       output = fp_helper.join_as_filepath(
+           sample_arr,
+           drive_letter=drive_letter,
+           force_posix=force_posix
+        )
+       self.assertEqual(output, "home/\\admin/\\documents/\\test_file")       
+
+
+    def test_join_as_filepath_rooted_posix(self):
+       force_posix = True #POSIX behavior is optional on Windows, but this forces it.
+       sample_arr = ['', 'home', 'admin', 'documents', 'test_file']
+       output = fp_helper.join_as_filepath(sample_arr, force_posix=force_posix)
+       self.assertEqual(output, "/home/admin/documents/test_file")       
+
+    def test_join_as_filepath_test_with_forward_slash_rooted_posix(self):
+       force_posix = True #POSIX behavior is optional on Windows, but this forces it.
+       sample_arr = ['', 'home\\', 'admin\\', 'documents\\', 'test_file']
+       output = fp_helper.join_as_filepath(sample_arr, force_posix=force_posix)
+       self.assertEqual(output, "/home\\/admin\\/documents\\/test_file")       
+    
+    def test_join_as_filepath_with_drive_letter_rooted_posix(self):
+       drive_letter="D:"
+       force_posix = True #POSIX behavior is optional on Windows, but this forces it.
+       sample_arr = ['', 'home', 'admin', 'documents', 'test_file']
+       output = fp_helper.join_as_filepath(
+           sample_arr,
+           drive_letter = drive_letter,
+           force_posix=force_posix
+       )
+       self.assertEqual(output, "/home/admin/documents/test_file")       
+
+    def test_join_as_filepath_test_with_forward_slash_with_drive_letter_rooted_posix(self):
+       drive_letter="D:"
+       force_posix = True #POSIX behavior is optional on Windows, but this forces it.
+       sample_arr = ['', 'home\\', 'admin\\', 'documents\\', 'test_file']
+       output = fp_helper.join_as_filepath(
+           sample_arr,
+           drive_letter = drive_letter,
+           force_posix=force_posix
+        )
+       self.assertEqual(output, "/home\\/admin\\/documents\\/test_file")       
+    
+    def test_join_as_filepath_force_posix_false_rooted_unc(self):
+       force_posix = False
+       drive_letter = ''
+       sample_arr = ['', 'home', 'admin', 'documents', 'test_file']
+       output = fp_helper.join_as_filepath(
+           sample_arr,
+           drive_letter=drive_letter,
+           force_posix=force_posix
+        )
+       self.assertEqual(output, "\\home\\admin\\documents\\test_file")       
+
+    def test_join_as_filepath_test_with_backslash_force_posix_false_rooted_unc(self):
+       force_posix = False
+       drive_letter = ''
+       sample_arr = ['', 'home/', 'admin/', 'documents/', 'test_file']
+       output = fp_helper.join_as_filepath(
+           sample_arr,
+           drive_letter=drive_letter,
+           force_posix=force_posix
+        )
+       self.assertEqual(output, "\\home/\\admin/\\documents/\\test_file")       
+    
+    #Ignore drive letter when "root" is not expected.
+    def test_join_as_filepath_force_posix_false_with_drive_letter_rooted_unc(self):
+       force_posix = False
+       drive_letter = 'C:'
+       sample_arr = ['','home', 'admin', 'documents', 'test_file']
+       output = fp_helper.join_as_filepath(
+           sample_arr,
+           drive_letter=drive_letter,
+           force_posix=force_posix
+        )
+       self.assertEqual(output, "C:\\home\\admin\\documents\\test_file")       
+
+    def test_join_as_filepath_test_with_backslash_force_posix_false_rooted_unc(self):
+       force_posix = False
+       drive_letter = 'C:'
+       sample_arr = ['', 'home/', 'admin/', 'documents/', 'test_file']
+       output = fp_helper.join_as_filepath(
+           sample_arr,
+           drive_letter=drive_letter,
+           force_posix=force_posix
+        )
+       self.assertEqual(output, "C:\\home/\\admin/\\documents/\\test_file")       
+
 if __name__ == "__main__":
     unittest.main()
