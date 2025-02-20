@@ -40,9 +40,10 @@ class TestHelperFunctionsRequiringContext(unittest.TestCase):
     def test_backreference_in_include_filepath(self):
         input = "/grandparent_dir/parent_dir/../test-include.cmake"
         output = gentestfile.resolve_relative_include_path(input, self.app_singleton)
+        expected_output_path = pathlib.Path("/grandparent_dir/test-include.cmake").resolve()
         self.assertEqual(
             output, 
-            "/grandparent_dir/test-include.cmake"
+            expected_output_path.__str__()
         )
 
     def test_backreference_after_variable(self):
@@ -57,9 +58,10 @@ class TestHelperFunctionsRequiringContext(unittest.TestCase):
     def test_backreference_before_variable(self):
         input = R"/grandparent_dir/parent_dir/../${CMAKE_CURRENT_LIST_DIR}/test-include.cmake"
         output = gentestfile.resolve_relative_include_path(input, self.app_singleton)
+        partial_expected_output = pathlib.Path("/grandparent_dir").resolve()
         self.assertEqual(
             output, 
-            (pathlib.Path("/grandparent_dir") / common.test_file_dir / "test-include.cmake").__str__()
+            (partial_expected_output / common.test_file_dir / "test-include.cmake").__str__()
 
         )
 
@@ -82,7 +84,8 @@ class TestHelperFunctionsRequiringContext(unittest.TestCase):
     def test_self_reference_before_variable(self):
         input = R"/grandparent_dir/parent_dir/./${CMAKE_CURRENT_LIST_DIR}/test-include.cmake"
         output = gentestfile.resolve_relative_include_path(input, self.app_singleton)
+        partial_expected_output = pathlib.Path('/grandparent_dir').resolve()
         self.assertEqual(
             output, 
-            (pathlib.Path("/grandparent_dir") / "parent_dir" / common.test_file_dir / "test-include.cmake").__str__()
+            (partial_expected_output / "parent_dir" / common.test_file_dir / "test-include.cmake").__str__()
         )

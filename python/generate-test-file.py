@@ -9,7 +9,9 @@ import pathlib
 import re
 import subprocess
 import sys
+
 import cmake_helper
+import filepath_helper
 
 class TestDescriptorFileParseError(RuntimeError):
     def __init__(self, msg, *args, line = '- ',  **kwargs):
@@ -108,31 +110,22 @@ def remove_cmake_escape_sequences(input):
 
 def resolve_vars_in_filepath(filepath, app_singleton):
     temp = None
-    retval_prefix = []
     retval = []    
-    #separator = pathlib.Path.sep #This is what is screwing my over. Why?!
-    if(os.name == 'nt'):
-        #Windows. So, we need to trim off the drive:
-        temp = os.path.splitdrive(filepath)
-        filepath = temp[1]
-        retval_prefix.append(temp[0])
+    drive_letter, exploded_path = filepath_helper.split_filepath(filepath) #This is the problem. Why isn't this doing shit? 
 
-        
-
-    exploded_path = filepath.split(os.sep) #This is the problem. Why isn't this doing shit? 
-    if exploded_path[0] == "":
-        retval_prefix.append(os.sep)
-        exploded_path = exploded_path[1:] 
     for var in exploded_path:
         print("resolve_vars_in_filepath: var: {}".format(var))
         retval.append(app_singleton.context.resolve_vars(var))
 
-    retval = retval_prefix + retval
-    return os.path.join(*retval)
+    return filepath_helper.join_as_filepath(
+        retval,
+        drive_letter=drive_letter,
+        force_posix=False
+    )
 
 def resolve_relative_include_path(relative_path, app_singleton):
     relative_path = pathlib.Path(resolve_vars_in_filepath(relative_path, app_singleton))
-    relative_path = relative_path.resolve()
+    relative_path = relative_path.resolve() #This is what is breaking. It does weird shit to the path.
     return relative_path.__str__()
 
 def scan_for_include(parse_status, app_singleton):
