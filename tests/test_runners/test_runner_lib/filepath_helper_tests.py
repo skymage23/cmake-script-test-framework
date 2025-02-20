@@ -111,10 +111,11 @@ class TestFilepathHelper(unittest.TestCase):
 
         if(os.name == 'nt'): 
             expected_output = ['', 'Users', 'Admin', 'Documents', 'TestFiles']
+            self.assertIsNotNone(drive_letter)
             
         else:
             expected_output = [sample_path]
-        self.assertIsNotNone(drive_letter)
+            self.assertIsNone(drive_letter)
         self.assertEqual(output, expected_output)
 
     def test_filepath_helper_self_references_no_drive_letter_unc(self):
@@ -123,9 +124,10 @@ class TestFilepathHelper(unittest.TestCase):
 
         if(os.name == 'nt'): 
             expected_output = ['', 'Users', 'Admin', 'Documents', '.', 'TestFiles']
+            self.assertIsNotNone(drive_letter)
         else:
             expected_output = [sample_path]
-        self.assertIsNotNone(drive_letter)
+            self.assertIsNone(drive_letter)
         self.assertEqual(output, expected_output)
 
     def test_filepath_helper_backreferences_no_drive_letter_unc(self):
@@ -134,9 +136,10 @@ class TestFilepathHelper(unittest.TestCase):
 
         if(os.name == 'nt'): 
             expected_output = ['', 'Users', 'Admin', 'Documents', '..', 'Documents', 'TestFiles']
+            self.assertIsNotNone(drive_letter)
         else:
             expected_output = [sample_path]
-        self.assertIsNotNone(drive_letter)
+            self.assertIsNone(drive_letter) #This is the problem.
         self.assertEqual(output, expected_output)
 
     def test_filepath_helper_spaces_in_dir_name_no_drive_letter_unc(self):
@@ -145,9 +148,10 @@ class TestFilepathHelper(unittest.TestCase):
 
         if(os.name == 'nt'): 
             expected_output = ['', 'Users', 'Admin', 'Documents', ' tester ', 'TestFiles']
+            self.assertIsNotNone(drive_letter)
         else:
             expected_output = [sample_path]
-        self.assertIsNotNone(drive_letter)
+            self.assertIsNone(drive_letter)
         self.assertEqual(output, expected_output)
 
     def test_join_as_filepath_posix(self):
@@ -330,7 +334,7 @@ class TestFilepathHelper(unittest.TestCase):
     def test_resolve_abs_path_nonroot_self_reference_posix(self):
         string = "/grandfather/daughter/grandson/./greatgranddaughter"
         resolved_path = fp_helper.resolve_abs_path(string)
-        self.assertEqual(resolved_path, "/grandparent/daughter/grandson/greatgranddaughter")
+        self.assertEqual(resolved_path, "/grandfather/daughter/grandson/greatgranddaughter")
  
     @unittest.skipIf(os.name == 'nt', 'Windows behavior appends drive letters, which does not work on POSIX systems.')
     def test_resolve_abs_path_root_backreference_posix(self):
