@@ -65,10 +65,11 @@ class TestHelperFunctionsRequiringContext(unittest.TestCase):
     #continues to work correctly.
 
     @unittest.skipIf(os.name == 'nt', 'Windows uses UNC pathing and drive letters, neither of which are used in non-Windows/DOS OSs.')
-    def test_backreference_before_variable_unc(self):
+    def test_backreference_before_variable_posix(self):
         input = R"/grandparent_dir/parent_dir/../${CMAKE_CURRENT_LIST_DIR}/test-include.cmake"
         output = gentestfile.resolve_relative_include_path(input, self.app_singleton)
         expected_output = "/".join([
+            "",
             "grandparent_dir",
             common.test_file_dir.__str__(),
             "test-include.cmake"
@@ -122,9 +123,10 @@ class TestHelperFunctionsRequiringContext(unittest.TestCase):
         input = R"/grandparent_dir/parent_dir/./${CMAKE_CURRENT_LIST_DIR}/test-include.cmake"
         output = gentestfile.resolve_relative_include_path(input, self.app_singleton)
         expected_output = "/".join([
+            "",
             "grandparent_dir",
             "parent_dir",
-            common.test_file_dir.__str__(),
+            common.test_file_dir.__str__(), 
             "test-include.cmake"
         ])
         self.assertEqual(

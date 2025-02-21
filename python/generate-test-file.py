@@ -124,13 +124,9 @@ def resolve_vars_in_filepath(filepath, app_singleton):
     )
 
 def resolve_relative_include_path(relative_path, app_singleton):
-    relative_path = pathlib.Path(resolve_vars_in_filepath(relative_path, app_singleton))
-    relative_path = pathlib.Path(
-        filepath_helper.resolve_abs_path(
-            relative_path.__str__()
-        )
-    )
-    return relative_path.__str__()
+    relative_path = resolve_vars_in_filepath(relative_path, app_singleton)
+    relative_path = filepath_helper.resolve_abs_path(relative_path)
+    return relative_path
 
 def scan_for_include(parse_status, app_singleton):
     #We ignore "include(*/cmake-test.cmake)"
