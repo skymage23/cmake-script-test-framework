@@ -2,6 +2,7 @@
 import unittest
 
 import importlib
+import os
 import pathlib
 import sys
 
@@ -55,14 +56,41 @@ class TestHelperFunctionsRequiringContext(unittest.TestCase):
             (common.test_dir / "test-include.cmake").__str__()
         )
 
-    def test_backreference_before_variable(self):
+    #Ok. This part is not going to make sense in context
+    #because CMAKE_CURRENT_LIST_DIR resolves to a full, absolute
+    #path. That said, we are going to leave it in because, 
+    #in the future, we may support other CMake built-in
+    #variables that don't behave this way, and we
+    #want to be sure that our path resolution code
+    #continues to work correctly.
+
+    @unittest.skipIf(os.name == 'nt', 'Windows uses UNC pathing and drive letters, neither of which are used in non-Windows/DOS OSs.')
+    def test_backreference_before_variable_unc(self):
         input = R"/grandparent_dir/parent_dir/../${CMAKE_CURRENT_LIST_DIR}/test-include.cmake"
         output = gentestfile.resolve_relative_include_path(input, self.app_singleton)
-        partial_expected_output = pathlib.Path("/grandparent_dir").resolve()
+        expected_output = "/".join([
+            "grandparent_dir",
+            common.test_file_dir.__str__(),
+            "test-include.cmake"
+        ])
         self.assertEqual(
             output, 
-            (partial_expected_output / common.test_file_dir / "test-include.cmake").__str__()
+            expected_output
+        )
 
+    @unittest.skipIf(os.name != 'nt', 'Windows uses UNC pathing, and here that means expecting drive letters.')
+    def test_backreference_before_variable_unc(self):
+        input = R"/grandparent_dir/parent_dir/../${CMAKE_CURRENT_LIST_DIR}/test-include.cmake"
+        output = gentestfile.resolve_relative_include_path(input, self.app_singleton)
+        expected_output = "\\".join([
+            "C:",
+            "grandparent_dir",
+            common.test_file_dir.__str__(),
+            "test-include.cmake"
+        ])
+        self.assertEqual(
+            output, 
+            expected_output
         )
 
     def test_self_reference_in_include_filepath(self):
@@ -81,11 +109,41 @@ class TestHelperFunctionsRequiringContext(unittest.TestCase):
             (common.test_file_dir / "test-include.cmake").__str__()
         )
 
-    def test_self_reference_before_variable(self):
+    #Ok. This part is not going to make sense in context
+    #because CMAKE_CURRENT_LIST_DIR resolves to a full, absolute
+    #path. That said, we are going to leave it in because, 
+    #in the future, we may support other CMake built-in
+    #variables that don't behave this way, and we
+    #want to be sure that our path resolution code
+    #continues to work correctly.
+
+    @unittest.skipIf(os.name == 'nt', 'Windows uses UNC pathing and drive letters, neither of which are used in non-Windows/DOS OSs.')
+    def test_self_reference_before_variable_posix(self):
         input = R"/grandparent_dir/parent_dir/./${CMAKE_CURRENT_LIST_DIR}/test-include.cmake"
         output = gentestfile.resolve_relative_include_path(input, self.app_singleton)
-        partial_expected_output = pathlib.Path('/grandparent_dir').resolve()
+        expected_output = "/".join([
+            "grandparent_dir",
+            "parent_dir",
+            common.test_file_dir.__str__(),
+            "test-include.cmake"
+        ])
         self.assertEqual(
             output, 
-            (partial_expected_output / "parent_dir" / common.test_file_dir / "test-include.cmake").__str__()
+            expected_output
+        )
+
+    @unittest.skipIf(os.name != 'nt', 'Windows uses UNC pathing, and here that means expecting drive letters.')
+    def test_self_reference_before_variable_unc(self):
+        input = R"/grandparent_dir/parent_dir/./${CMAKE_CURRENT_LIST_DIR}/test-include.cmake"
+        output = gentestfile.resolve_relative_include_path(input, self.app_singleton)
+        expected_output = "\\".join([
+            "C:",
+            "grandparent_dir",
+            "parent_dir",
+            common.test_file_dir.__str__(),
+            "test-include.cmake"
+        ])
+        self.assertEqual(
+            output, 
+            expected_output
         )
