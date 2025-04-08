@@ -10,7 +10,7 @@ import re
 import subprocess
 import sys
 
-import cmake_helper
+import python.cmake.cmake_helper as cmake_helper
 import filepath_helper
 
 class TestDescriptorFileParseError(RuntimeError):
@@ -108,25 +108,25 @@ def remove_cmake_escape_sequences(input):
     input = input.replace(" ", "\u005c ")
     return input
 
-def resolve_vars_in_filepath(filepath, app_singleton):
-    temp = None
-    retval = []    
-    drive_letter, exploded_path = filepath_helper.split_filepath(filepath) #This is the problem. Why isn't this doing shit? 
+#def resolve_vars_in_filepath(filepath, app_singleton):
+#    retval = []    
+#    drive_letter, exploded_path = filepath_helper.split_filepath(filepath) #This is the problem. Why isn't this doing shit? 
+#
+#    for var in exploded_path:
+#        retval.append(app_singleton.context.resolve_vars(var))
+#
+#    return filepath_helper.join_as_filepath(
+#        retval,
+#        drive_letter=drive_letter,
+#        force_posix=False
+#    )
 
-    for var in exploded_path:
-        print("resolve_vars_in_filepath: var: {}".format(var))
-        retval.append(app_singleton.context.resolve_vars(var))
-
-    return filepath_helper.join_as_filepath(
-        retval,
-        drive_letter=drive_letter,
-        force_posix=False
-    )
-
-def resolve_relative_include_path(relative_path, app_singleton):
-    relative_path = resolve_vars_in_filepath(relative_path, app_singleton)
-    relative_path = filepath_helper.resolve_abs_path(relative_path)
-    return relative_path
+#def process_path(filepath, app_singleton):
+#    #relative_path = resolve_vars_in_filepath(relative_path, app_singleton)
+#    drive_letter, exploded_path = filepath_helper.split_filepath(filepath)
+#    for var in exploded_path
+#    relative_path = filepath_helper.resolve_abs_path(relative_path)
+#    return relative_path
 
 def scan_for_include(parse_status, app_singleton):
     #We ignore "include(*/cmake-test.cmake)"
@@ -142,10 +142,8 @@ def scan_for_include(parse_status, app_singleton):
     str_temp = (str_temp[index_temp + 1: -2]).strip()
     str_temp = strip_quotation_marks(str_temp)
     
-    print("scan_for_include: {}".format(str_temp))
-    temp = resolve_relative_include_path(str_temp, app_singleton)  #Resolve relative paths.
-    print("scan_for_includes(absolute): {}".format(temp))
-    str_temp = pathlib.Path(temp).name
+    temp = filepath_helper.resolve_abs_path(str_temp)
+    str_temp = pathlib.Path(str_temp).name
     
     #Quietly ignore the include of the dummy definitions:        
     if not CMAKE_TEST_FILENAME in str_temp:
@@ -195,7 +193,6 @@ def check_for_command_definition(command_type, parse_status, app_singleton):
     final_command_end = command_end_stack[len(command_end_stack) - 1]
     parse_status.current_index = final_command_end + 1
     return (command_start_stack[0], final_command_end)
-
 
 
 def scan_for_macro_definition(parse_status, app_singleton):
@@ -306,6 +303,7 @@ def scan_for_add_test_macro(parse_status, app_singleton):
 #def scan_lines_for_macro_match(lines, app_singleton):
 #    raise NotImplemented()
 
+#We need to move variable expansion time to here:
 def parse_file(app_singleton):
     #Shoud these checks pass, they advance "parse_status.current_index"
     #by point to the line after that indicating the end of the
@@ -318,7 +316,7 @@ def parse_file(app_singleton):
         scan_for_add_teardown_macro,
         scan_for_add_test_macro
     ]
-
+    temp_str = None
     checks_index = 0
     check_passed = False
     parse_status = ParseStatus()
@@ -328,6 +326,10 @@ def parse_file(app_singleton):
     except FileNotFoundError:
         print("Test descriptor file \"{}\" does not exist.".format(app_singleton.context.list_file.__str__()), file=sys.stderr)
         return None
+    
+    for i in range(0,len(parse_status.lines)):
+        temp_str = parse_status.lines[i]
+        parse_status.lines[i] = app_singleton.context.resolve_vars(temp_str)
 
     while parse_status.current_index < len(parse_status.lines):
         checks_index = 0
@@ -403,14 +405,14 @@ def run_cmake_as_linter(filename, working_dir):
         cmake_process = subprocess.run(
             ["cmake", "-P", filename],
             cwd = working_dir,
-            stderr = sys.stderr,
-            stdout = sys.stdout,
+            capture_output = True,
             shell = False
         )
 
         if cmake_process.returncode != 0:
             print("CMake lint failed. Input is not a valid CMake file.", file=sys.stderr)
-            print(cmake_process.stderr, file=sys.stderr)
+            print(f"CMake stdout: {cmake_process.stdout}", file=sys.stderr)
+            print(f"CMake stderr: {cmake_process.stderr}", file=sys.stderr)
             return False
     except Exception as e:
         print("Failed to run CMake as linter", file=sys.stderr)

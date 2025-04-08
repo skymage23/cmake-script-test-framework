@@ -1,9 +1,15 @@
+import copy
+import enum
 import os
 import pathlib
 import re
 #  I would MUCH rather make a lexer, but
 # I also want to keep this project simple.
 
+
+class VarEnvironExpansionError(Exception):
+    def __init__(self, varname):
+        super().__init__(f"Environment variable \"{varname}\" does not exist.")
 
 
 class CMakeScriptContext:
@@ -14,7 +20,7 @@ class CMakeScriptContext:
         return context.source_dir
     
     def resolve_project_source_dir(context):
-        return context.project_source_dir
+        return context.project_source_dir.__str__()
     
     def resolve_cmake_current_list_file(context):
         return context.list_file
@@ -45,35 +51,48 @@ class CMakeScriptContext:
         self.re_cmake_var_dereference = re.compile(R"^\$(?:ENV)?{.*}.?")
         self.re_cmake_env_var_dereference = re.compile(R"^\$?ENV{")
 
-    def resolve_var(self, varname):
-        if varname not in self.supported_builtin_vars:
+    def resolve_var(self, varname, is_env_var = False):
+        retval = None
+        if varname not in self.supported_builtin_vars and not is_env_var:
             raise ValueError("\"{}\" is not a variable we are capable of resolving.".format(varname))
-
-        return self.supported_builtin_vars[varname](self)
-    
-
-    def resolve_vars(self, string):
-        string = string.strip()
-        if self.re_cmake_var_dereference.search(string) is None:
-            return string
         
-        ind_temp1 = string.index('$') + 1
-        ind_temp2 = string.index('}')
-        string = string[ind_temp1: -(len(string) - (ind_temp2))]
+        if not is_env_var:
+            retval = self.supported_builtin_vars[varname](self)
+        else:
+            retval = os.environ.get(varname)
+            if retval is None:
+                raise VarEnvironExpansionError(varname)
+    #What if there is more than one variable?
+    # we need to change direction. We need to make tokenizer and a lexer.
+
+    class CMakeVarRefLangSyntaxError(Exception):
+        def __init__(self, message):
+            super().__init__(f"CMake variable dereference language syntax error: {message}")
+
+  
+    #def resolve_vars(self, string):
+    #    var_string = None
+    #    resolved_var = None
+    #    string = string.strip()
+    #    if self.re_cmake_var_dereference.search(string) is None:
+    #        return string
+    #    
+    #    ind_temp1 = string.index('$') + 1
+    #    ind_temp2 = string.index('}')
+    #    var_string = string[ind_temp1 + 1: -(len(string) - (ind_temp2))]
     
-        #OK. Are we an environment variable or not.
-        if self.re_cmake_env_var_dereference.search(string) is None:
-            string = string[1:]
-            retval = self.resolve_var(string)            
-        else: 
-            #Parse 
-            ind_temp1 = string.index('{') + 1
-            string = string[ind_temp1:]
-            if not string in os.environ:
-                raise ValueError("\"{}\" is not an existing environment variable.".format(string))
-            retval = os.environ[string]
-            
-        return retval
+    #    #OK. Are we an environment variable or not.
+    #    if self.re_cmake_env_var_dereference.search(var_string) is None:
+    #        resolved_var = self.resolve_var(var_string)            
+    #    else: 
+    #        #Parse 
+    #        var_string = string[(string.index('{') + 1):]
+    #        if not var_string in os.environ:
+    #            raise ValueError("\"{}\" is not an existing environment variable.".format(var_string))
+    #        resolved_var =os.environ[string]
+    #    
+    #    retval = f"{string[0:ind_temp1 - 2]}{resolved_var}{string[ind_temp2+1:]}"   
+    #    return retval
     
     def __str__(self):
         #Hello:

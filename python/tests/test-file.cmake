@@ -8,44 +8,20 @@
 #*****************
 # Includes:
 #*****************
-include("/mnt/samsung_nvme_1tb/source_cd_dirs/cmake-script-test-framework/tests/test_files/test-include.cmake")
+include("cmake-test.cmak")
+include("${CMAKE_CURRENT_LIST_DIR}/test-include.cmak")
 
 #************************
 # Command Definitions:
 #************************
-function(am_i_a_bro)
-    message(STATUS "Yes.")
-endfunction()
-
-macro(setup)
-    message(STATUS "I am the Setup macro.")
-endmacro()
-
-macro(teardown)
-    message(STATUS "I am the Teardown macro.")
-endmacro()
-
-macro(test)
-    message(STATUS "I am the Test macro.")
-    am_i_a_bro()
-endmacro()
-
-macro(grouptester_test1)
-    message(STATUS "I am grouptester_test1.")
-endmacro()
-
-macro(grouptester_test2)
-    message(STATUS "I am grouptester_test2.")
-endmacro()
-
-macro(grouptester2_test1)
-    message(STATUS "I am grouptester2_test1.")
-endmacro()
-
-macro(grouptester2_test2)
-    message(STATUS "I am grouptester2_test2.")
-endmacro()
-
+function(am_i_a_bro)message(STATUS "Yes.")endfunction()
+macro(setup)message(STATUS "I am the Setup macro.")endmacro()
+macro(teardown)message(STATUS "I am the Teardown macro.")endmacro()
+macro(test)message(STATUS "I am the Test macro.")am_i_a_bro()endmacro()
+macro(grouptester_test1)message(STATUS "I am grouptester_test1.")endmacro()
+macro(grouptester_test2)message(STATUS "I am grouptester_test2.")endmacro()
+macro(grouptester2_test1)message(STATUS "I am grouptester2_test1.")endmacro()
+macro(grouptester2_test2)message(STATUS "I am grouptester2_test2.")endmacro()
 #************************
 # Tests: 
 #************************
@@ -53,25 +29,25 @@ endmacro()
 #* Test Group: test
 #*
 #*************************
-setup()
+setu()
 test()
-teardown()
+teardow()
 
 #*
 #* Test Group: grouptester
 #*
 #*************************
-setup()
+setu()
 grouptester_test1()
 grouptester_test2()
-teardown()
+teardow()
 
 #*
 #* Test Group: grouptester2
 #*
 #*************************
-setup()
+setu()
 grouptester2_test1()
 grouptester2_test2()
-teardown()
+teardow()
 

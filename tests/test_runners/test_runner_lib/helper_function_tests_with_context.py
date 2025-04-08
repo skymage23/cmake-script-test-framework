@@ -11,8 +11,10 @@ import common
 sys.path.append(common.scripts_dir.__str__())
 
 gentestfile = importlib.import_module("generate-test-file")
+filepath_helper = importlib.import_module("filepath_helper")
 
 class TestHelperFunctionsRequiringContext(unittest.TestCase):
+
     def setUp(self) -> None:
         self.pretend_working_directory = common.project_base_dir
         self.pretend_source_directory = common.project_base_dir
@@ -28,11 +30,16 @@ class TestHelperFunctionsRequiringContext(unittest.TestCase):
         ]
         _ , context = gentestfile.parse_args_into_context(args)
         self.app_singleton =  gentestfile.ApplicationSingleton(context)
-        return super().setUp()
+        super().setUp()
+
+        if self.use_breakpoint:
+            breakpoint()
 
     def test_var_in_include_filepath(self):
+        if self.use_breakpoint:
+            breakpoint()
         input = R"${CMAKE_CURRENT_LIST_DIR}/test-include.cmake"
-        output = gentestfile.resolve_vars_in_filepath(input, self.app_singleton)
+        output = self.app_singleton.context.resolve_vars(input)
         self.assertEqual(
             output, 
             (common.test_file_dir / "test-include.cmake").__str__()
@@ -40,7 +47,7 @@ class TestHelperFunctionsRequiringContext(unittest.TestCase):
     
     def test_backreference_in_include_filepath(self):
         input = "/grandparent_dir/parent_dir/../test-include.cmake"
-        output = gentestfile.resolve_relative_include_path(input, self.app_singleton)
+        output = self.app_singleton.context.resolve_abs_path(input)
         expected_output_path = pathlib.Path("/grandparent_dir/test-include.cmake").resolve()
         self.assertEqual(
             output, 
@@ -49,11 +56,13 @@ class TestHelperFunctionsRequiringContext(unittest.TestCase):
 
     def test_backreference_after_variable(self):
         input = R"${CMAKE_CURRENT_LIST_DIR}/../test-include.cmake"
-        output = gentestfile.resolve_relative_include_path(input, self.app_singleton)
-        print(output)
+        input = self.app_singleton.context.resolve_vars(input)
+        output = filepath_helper.resolve_abs_path(input)
+        if self.enable_output_printing:
+            print(output)
         self.assertEqual(
             output, 
-            (common.test_dir / "test-include.cmake").__str__()
+            (common.test_dir / "test_include.cmake").__str__()
         )
 
     #Ok. This part is not going to make sense in context
@@ -67,7 +76,9 @@ class TestHelperFunctionsRequiringContext(unittest.TestCase):
     @unittest.skipIf(os.name == 'nt', 'Windows uses UNC pathing and drive letters, neither of which are used in non-Windows/DOS OSs.')
     def test_backreference_before_variable_posix(self):
         input = R"/grandparent_dir/parent_dir/../${CMAKE_CURRENT_LIST_DIR}/test-include.cmake"
-        output = gentestfile.resolve_relative_include_path(input, self.app_singleton)
+        input = self.app_singleton.context.resolve_vars(input)
+        output = filepath_helper.resolve_abs_path(input)
+        #output = gentestfile.resolve_relative_include_path(input, self.app_singleton)
         expected_output = "/".join([
             "",
             "grandparent_dir",
@@ -82,7 +93,9 @@ class TestHelperFunctionsRequiringContext(unittest.TestCase):
     @unittest.skipIf(os.name != 'nt', 'Windows uses UNC pathing, and here that means expecting drive letters.')
     def test_backreference_before_variable_unc(self):
         input = R"/grandparent_dir/parent_dir/../${CMAKE_CURRENT_LIST_DIR}/test-include.cmake"
-        output = gentestfile.resolve_relative_include_path(input, self.app_singleton)
+        input = self.app_singleton.context.resolve_vars(input)
+        output = filepath_helper.resolve_abs_path(input)
+        #output = gentestfile.resolve_relative_include_path(input, self.app_singleton)
         expected_output = "\\".join([
             "C:",
             "grandparent_dir",
@@ -95,8 +108,10 @@ class TestHelperFunctionsRequiringContext(unittest.TestCase):
         )
 
     def test_self_reference_in_include_filepath(self):
-        input = ("{}/./test-include.cmake".format(common.test_file_dir.__str__())).__str__()
-        output = gentestfile.resolve_relative_include_path(input, self.app_singleton)
+        input = f"{common.test_file_dir.__str__()}/./test-include.cmake"
+        input = self.app_singleton.context.resolve_vars(input)
+        output = filepath_helper.resolve_abs_path(input)
+        #output = gentestfile.resolve_relative_include_path(input, self.app_singleton)
         self.assertEqual(
             output, 
             (common.test_file_dir / "test-include.cmake").__str__()
@@ -104,7 +119,9 @@ class TestHelperFunctionsRequiringContext(unittest.TestCase):
 
     def test_self_reference_after_variable(self):
         input = R"${CMAKE_CURRENT_LIST_DIR}/./test-include.cmake"
-        output = gentestfile.resolve_relative_include_path(input, self.app_singleton)
+        input = self.app_singleton.context.resolve_vars(input)
+        output = filepath_helper.resolve_abs_path(input)
+        #output = gentestfile.resolve_relative_include_path(input, self.app_singleton)
         self.assertEqual(
             output, 
             (common.test_file_dir / "test-include.cmake").__str__()
@@ -121,7 +138,9 @@ class TestHelperFunctionsRequiringContext(unittest.TestCase):
     @unittest.skipIf(os.name == 'nt', 'Windows uses UNC pathing and drive letters, neither of which are used in non-Windows/DOS OSs.')
     def test_self_reference_before_variable_posix(self):
         input = R"/grandparent_dir/parent_dir/./${CMAKE_CURRENT_LIST_DIR}/test-include.cmake"
-        output = gentestfile.resolve_relative_include_path(input, self.app_singleton)
+        input = self.app_singleton.context.resolve_vars(input)
+        output = filepath_helper.resolve_abs_path(input)
+        #output = gentestfile.resolve_relative_include_path(input, self.app_singleton)
         expected_output = "/".join([
             "",
             "grandparent_dir",
@@ -137,7 +156,9 @@ class TestHelperFunctionsRequiringContext(unittest.TestCase):
     @unittest.skipIf(os.name != 'nt', 'Windows uses UNC pathing, and here that means expecting drive letters.')
     def test_self_reference_before_variable_unc(self):
         input = R"/grandparent_dir/parent_dir/./${CMAKE_CURRENT_LIST_DIR}/test-include.cmake"
-        output = gentestfile.resolve_relative_include_path(input, self.app_singleton)
+        input = self.app_singleton.context.resolve_vars(input)
+        output = filepath_helper.resolve_abs_path(input)
+        #output = gentestfile.resolve_relative_include_path(input, self.app_singleton)
         expected_output = "\\".join([
             "C:",
             "grandparent_dir",

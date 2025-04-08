@@ -1,0 +1,5 @@
+include("${CMAKE_CURRENT_LIST_DIR}/../../cmake-test.cmake")
+macro(test_expand_cmake_build_dir)
+    message("${CMAKE_BUILD_DIR}")
+endmacro()
+add_test_macro(MACRO_NAME test_expand_cmake_build_dir)
