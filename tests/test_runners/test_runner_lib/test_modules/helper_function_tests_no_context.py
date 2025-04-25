@@ -2,14 +2,13 @@ import unittest
 
 import common
 import importlib
-import pathlib
 import sys
 
 sys.path.append(common.scripts_dir.__str__())
 
 gentestfile = importlib.import_module("generate-test-file")
 
-class TestFileGenerationHelperNoContextTests(unittest.TestCase):
+class TestFileGenerationHelperNoContextTests(common.TestCaseWrapper):
     #Hello
     def test_strip_quotation_marks(self):
         input="\"Stranglewood\""

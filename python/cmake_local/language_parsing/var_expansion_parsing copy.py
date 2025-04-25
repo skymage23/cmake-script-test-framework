@@ -36,6 +36,7 @@ class VarParseError(Exception):
 class VarParser:
     def __init__(self, context):
         self.context = context
+        self.token_list = None
         self.reset()
 
     class VarParseTokenType(enum.Enum):
@@ -48,58 +49,100 @@ class VarParser:
     class Token:
         def __init__(
                 self,
-                start_ind,
-                end_ind,
                 token_list_ind,
                 token_type: 'VarParser.VarParseTokenType',
                 token_string
         ):
-            self.start_ind = start_ind
-            self.end_ind = end_ind
             self.token_list_ind = token_list_ind
             self.token_type = token_type
             self.token_string = token_string
+            self.consumed = False
+
+        def __str__(self):
+            return f"Token(token_list_ind={self.token_list_ind}, token_type={self.token_type}, token_string={self.token_string})"
 
         def consume(self, parser):
+            if self.consumed:
+                return
+
+            self.consumed = True
+            self.evaluate_next_token(parser)
+
+        def evaluate_next_token(self, parser):
             parser.counter += 1
             if parser.counter < len(parser.token_list):
                 parser.token_list[parser.counter].handle(parser)
 
+        def handle_internal(self, parser):
+            raise development.exceptions.DevelopmentError("This method should be overridden by subclasses")
+
+        def handle(self, parser):
+            if self.consumed:
+                self.evaluate_next_token(parser)
+                return
+            self.handle_internal(parser)
+        
+        def __str__(self):
+            return f"Token(token_list_ind={self.token_list_ind}, token_type={self.token_type}, token_string={self.token_string})"
+
     #Anything in the line that is not a reserved character or is not
     #an instance of said character in a syntactically correct orientation.
     class VarCharStringToken(Token):
-        def __init__(self, start_ind, end_ind, token_list_ind, char_string):
-            super().__init__(start_ind, end_ind, token_list_ind, VarParser.VarParseTokenType.VAR_CHAR_STRING, char_string)
+        def __init__(self, token_list_ind, char_string):
+            super().__init__(token_list_ind, VarParser.VarParseTokenType.VAR_CHAR_STRING, char_string)
 
-        def handle(self, parser):
+        def handle_internal(self, parser):
+            if self.consumed:
+                return
+
+            if parser.counter > 0:
+                #Merge with char tokens to the left and right:
+                start_ind = self.token_list_ind - 1
+                end_ind = self.token_list_ind + 1
+                temp_string = ""
+                while start_ind >= 0 and \
+                    parser.token_list[start_ind].token_type == VarParser.VarParseTokenType.VAR_CHAR_STRING:
+                    start_ind -= 1
+                start_ind += 1
+                
+                while end_ind < len(parser.token_list) and \
+                    parser.token_list[end_ind].token_type == VarParser.VarParseTokenType.VAR_CHAR_STRING:
+                    parser.token_list[end_ind].consumed = True
+                    end_ind += 1
+
+                for i in range(start_ind, end_ind):
+                    temp_string += parser.token_list[i].token_string
+
+                #This is easier than moving than having to move tokens down the list:
+                if end_ind < len(parser.token_list):
+                    parser.token_list = parser.token_list[:start_ind] + [VarParser.VarCharStringToken(start_ind, temp_string)] \
+                                        + parser.token_list[end_ind:]
+                else:
+                    parser.token_list = parser.token_list[:start_ind] + [VarParser.VarCharStringToken(start_ind, temp_string)]
+
+                self.consumed = True
+                parser.counter = start_ind
+                parser.token_list[start_ind].handle(parser)
+                return
+            
             self.consume(parser)
 
     #Language character: '$'
     class VarBeginToken(Token):
-        def __init__(self, start_ind, end_ind, token_list_ind):
-            super().__init__(start_ind, end_ind, token_list_ind, VarParser.VarParseTokenType.VAR_BEGIN, '$')
+        def __init__(self, token_list_ind):
+            super().__init__(token_list_ind, VarParser.VarParseTokenType.VAR_BEGIN, '$')
 
-        def handle(self, parser):
-            have_open_brace = False
-            if parser.counter + 1 == len(parser.token_list) or \
-               not (parser.token_list[parser.counter + 1].token_type == VarParser.VarParseTokenType.VAR_ENV or\
-                    parser.token_list[parser.counter + 1].token_type == VarParser.VarParseTokenType.VAR_OPEN_BRACE
+        def handle_internal(self, parser):
+            if self.token_list_ind + 1 == len(parser.token_list) or \
+               not (parser.token_list[self.token_list_ind + 1].token_type == VarParser.VarParseTokenType.VAR_ENV or\
+                    parser.token_list[self.token_list_ind + 1].token_type == VarParser.VarParseTokenType.VAR_OPEN_BRACE
             ):
-                
-                
-                for i in range(self.end_ind + 1, len(parser.token_list)):
-                    if parser.token_list[i].token_type == VarParser.VarParseTokenType.VAR_OPEN_BRACE:
-                        have_open_brace
-                        break
-
-                if have_open_brace:
-                    #throw syntax error:
+                if (self.token_list_ind + 2 < len(parser.token_list)) and \
+                   (parser.token_list[self.token_list_ind + 2].token_type == VarParser.VarParseTokenType.VAR_OPEN_BRACE):
                     raise VarParseError("Only ENV is allowed between '$' and '{'")
 
                 else:
                     parser.token_list[self.token_list_ind] = VarParser.VarCharStringToken(
-                        self.start_ind,
-                        self.end_ind,
                         self.token_list_ind,
                         self.token_string
                     )
@@ -108,11 +151,11 @@ class VarParser:
             self.consume(parser)
     #Language character: '{'        
     class VarOpenBraceToken(Token):
-        def __init__(self, start_ind, end_ind, token_list_ind):
-            super().__init__(start_ind, end_ind, token_list_ind, VarParser.VarParseTokenType.VAR_OPEN_BRACE, '{')
+        def __init__(self, token_list_ind):
+            super().__init__(token_list_ind, VarParser.VarParseTokenType.VAR_OPEN_BRACE, '{')
             self.env_var = False
 
-        def handle(self, parser):
+        def handle_internal(self, parser):
             close_brace_found = False
             #Look for associated close brace:
             if parser.counter == 0 or \
@@ -120,30 +163,28 @@ class VarParser:
                     parser.token_list[parser.counter - 1].token_type == VarParser.VarParseTokenType.VAR_ENV
             ):
                 parser.token_list[self.token_list_ind] = VarParser.VarCharStringToken(
-                    self.start_ind,
-                    self.end_ind,
                     self.token_list_ind,
                     self.token_string
                 )
                 parser.token_list[self.token_list_ind].handle(parser)
                 return
 
-           #Bug: Does not handle nested vars: 
-            open_brace_stack_counter= []
-            for i in range(self.end_ind + 1, len(parser.token_list)):
+           # Error is here:
+            open_brace_stack_counter = 0
+            for i in range(self.token_list_ind + 1, len(parser.token_list)):
                 token = parser.token_list[i]
                 if token.token_type == VarParser.VarParseTokenType.VAR_OPEN_BRACE and \
                    parser.token_list[i - 1].token_type == VarParser.VarParseTokenType.VAR_BEGIN:
                       #Hello:
                       open_brace_stack_counter += 1 
                 if token.token_type == VarParser.VarParseTokenType.VAR_CLOSE_BRACE:
-                   
                    if open_brace_stack_counter > 0:
-                       pass 
+                       open_brace_stack_counter -= 1
                    else:
-                       token.open_brace_ind = self.start_ind
+                       token.open_brace_ind = self.token_list_ind
                        token.env_var = self.env_var
                        close_brace_found = True
+                       break
             
             if not close_brace_found:
                 raise VarParseError("Unterminated variable expansion: An '{' is missing its '}'")
@@ -152,170 +193,159 @@ class VarParser:
 
     #Language reserved character string: "ENV" 
     class VarEnvToken(Token):
-        def __init__(self, start_ind, end_ind, token_list_ind):
-            super().__init__(start_ind, end_ind, token_list_ind, VarParser.VarParseTokenType.VAR_ENV, "ENV")
+        def __init__(self, token_list_ind):
+            super().__init__(token_list_ind, VarParser.VarParseTokenType.VAR_ENV, "ENV")
         
-        def handle(self, parser):
-            token = parser.token_list[parser.counter]
-            if token.token_type != VarParser.VarParseTokenType.VAR_ENV:
-                return False
-        
+        def handle_internal(self, parser): 
             if parser.counter == 0 or \
                parser.token_list[parser.counter - 1].token_type != VarParser.VarParseTokenType.VAR_BEGIN or\
                parser.counter + 1 == len(parser.token_list) or\
                parser.token_list[parser.counter + 1].token_type != VarParser.VarParseTokenType.VAR_OPEN_BRACE:
-                #Convert to char string:
+                
+                
                 parser.token_list[self.token_list_ind] = VarParser.VarCharStringToken(
-                    self.start_ind, self.end_ind, self.token_list_ind, self.token_string) 
+                    self.token_list_ind,
+                    self.token_string
+                )
+                self.consumed = True
                 parser.token_list[self.token_list_ind].handle(parser)
                 return
             
-            parser.token_list[self.counter + 1].env_var= True
+            parser.token_list[parser.counter + 1].env_var= True
             self.consume(parser)
 
     #Language character: '}' 
     class VarCloseBraceToken(Token):
-        def __init__(self, start_ind, end_ind, token_list_ind):
-            super().__init__(start_ind, end_ind, token_list_ind, VarParser.VarParseTokenType.VAR_CLOSE_BRACE, '}')
+        def __init__(self, token_list_ind):
+            super().__init__(token_list_ind, VarParser.VarParseTokenType.VAR_CLOSE_BRACE, '}')
             self.env_var = False
             self.open_brace_ind = None
             self.spent = False
 
-        def handle(self, parser):
-            if self.spent:
-                return self.consume(parser)
+
+        def handle_internal(self, parser):
             temp_token = None
             temp_ind = None
             var_name = None
             var_retval = None
             #This handles all cases where this token was not preceded by an open brace:
+            breakpoint()
             if self.open_brace_ind is None:
                 parser.token_list[self.token_list_ind] = VarParser.VarCharStringToken(
-                    self.start_ind,
-                    self.end_ind,
                     self.token_list_ind,
                     self.token_string
                 )
                 parser.token_list[self.token_list_ind].handle(parser)
                 return
             
-            #Hello:
             var_name = ''
-            temp_ind = parser.counter - 1
+            temp_ind = self.open_brace_ind + 1
             temp_token = parser.token_list[temp_ind]
-
-            while temp_token.token_type != VarParser.VarParseTokenType.VAR_CHAR_STRING:
-                if temp_token.token_type != VarParser.VarParseTokenType.VAR_CLOSE_BRACE and \
-                   not temp_token.spent:
-                   raise VarParseError("Encountered unprocessed close bracket while resolving this one.")
-                temp_ind = -1
-                temp_token = parser.token_list[temp_ind]
+            if temp_token.token_type != VarParser.VarParseTokenType.VAR_CLOSE_BRACE:
+                var_name = temp_token.token_string
 
             var_retval = parser.resolve_var(var_name, self.env_var)
             
-            #Trace back to VAR_BEGIN:
-            temp_ind = self.open_brace_ind - 1
-
+            #Add the resolved var to the token list:
+            temp_ind -= 2
+            if self.env_var:
+                temp_ind -= 1
             parser.token_list[temp_ind] = VarParser.VarCharStringToken(
-                temp_token.start_ind,
-                temp_token.end_ind + len(var_retval),
-                temp_token.token_list_ind,
+                temp_ind,
                 var_retval
             )
             parser.counter = temp_ind
-            self.spent = True
+            self.consumed = True
             return parser.token_list[temp_ind].handle(parser)
 
     def resolve_var(self, var_name, is_env=False):
-        self.context.resolve_var()
+        return self.context.resolve_var(var_name, is_env)
     
     def reset(self):
-        self.token_list.clear()
-        self.token_list = None
+        if not self.token_list is None:
+            self.token_list.clear()
+            self.token_list = None
         self.resolved_string = None
         self.counter = 0
 
 
 
-    def var_parse_peek(self, string, start_ind, count):
-        retval=[]
-        if count < 0:
-            raise ValueError("\"count\" cannot be negative")
-        for i in range(start_ind, start_ind + count):
-            retval.append(string[i])
-        return "".join(retval)
+   # def var_parse_peek(self, string, start_ind, count):
+   #     retval=[]
+   #     if count < 0:
+   #         raise ValueError("\"count\" cannot be negative")
+   #     for i in range(start_ind, start_ind + count):
+   #         retval.append(string[i])
+   #     return "".join(retval)
 
     def get_token_stack(self, string):
         retval_tokens = []
         temp_arr=[]
-        temp_ind = 0
         counter = 0
+        token_list_ind = 0
         while counter < len(string):
             match(string[counter]):
                 case '$':
                     if len(temp_arr) > 0:
-                        retval_tokens.append(VarParser.Token(temp_ind, counter - 1, self.VarParseTokenType.VAR_CHAR_STRING, "".join(temp_arr)))
+                        retval_tokens.append(VarParser.VarCharStringToken(token_list_ind, "".join(temp_arr)))
                         temp_arr.clear()
-                    retval_tokens.append(VarParser.Token(counter, counter, self.VarParseTokenType.VAR_BEGIN, '$'))
-                    temp_ind = counter + 1
+                        token_list_ind += 1
+                    retval_tokens.append(VarParser.VarBeginToken(token_list_ind))
+                    token_list_ind += 1
                 
                 case '{':
                     if len(temp_arr) > 0:
-                        retval_tokens.append(VarParser.Token(temp_ind, counter - 1, self.VarParseTokenType.VAR_CHAR_STRING, "".join(temp_arr)))
+                        retval_tokens.append(VarParser.VarCharStringToken(token_list_ind, "".join(temp_arr)))
                         temp_arr.clear()
-                    retval_tokens.append(VarParser.Token(counter, counter, self.VarParseTokenType.VAR_OPEN_BRACE, '{'))
-                    temp_ind = counter + 1
+                        token_list_ind += 1
+                    retval_tokens.append(VarParser.VarOpenBraceToken(token_list_ind))
+                    token_list_ind += 1
                 
                 case '}':                   
                     if len(temp_arr) > 0:
-                        retval_tokens.append(VarParser.Token(temp_ind, counter - 1, self.VarParseTokenType.VAR_CHAR_STRING, "".join(temp_arr)))
+                        retval_tokens.append(VarParser.VarCharStringToken(token_list_ind, "".join(temp_arr)))
                         temp_arr.clear()
-                    retval_tokens.append(VarParser.Token(counter, counter, self.VarParseTokenType.VAR_CLOSE_BRACE, '}'))
-                    temp_ind = counter + 1
-                
-                case 'E': 
-                    if(self.var_parse_peek(string, counter, 2) == 'ENV'):
+                        token_list_ind += 1
+                    retval_tokens.append(VarParser.VarCloseBraceToken(token_list_ind))
+                    token_list_ind += 1
+                case 'E':
+                    if(string[counter : counter + 3] == 'ENV'):
                         if len(temp_arr) > 0:
-                            retval_tokens.append(VarParser.Token(temp_ind, counter - 1, self.VarParseTokenType.VAR_CHAR_STRING, "".join(temp_arr)))
+                            retval_tokens.append(VarParser.VarCharStringToken(token_list_ind, "".join(temp_arr)))
                             temp_arr.clear()
-                        
-                        retval_tokens.append(VarParser.Token(counter, counter + 2, self.VarParseTokenType.VAR_ENV, 'ENV'))
-                        temp_ind = counter + 3
+                            token_list_ind += 1
+                        retval_tokens.append(VarParser.VarEnvToken(token_list_ind))
                         counter += 2
+                        token_list_ind += 1
                     else: 
                         temp_arr.append('E')
-
                 case _:
                     temp_arr.append(string[counter])
             counter += 1
-        temp_arr.clear()
-        retval_tokens.reverse()
+
+        if len(temp_arr) > 0:
+            retval_tokens.append(VarParser.VarCharStringToken(token_list_ind, "".join(temp_arr)))
+            temp_arr.clear()
         return retval_tokens
 
 
     def resolve_all_vars(self, string):
         retval_arr = None
+        if string is None or len(string) == 0:
+            return None
+
         #[(start_ind, end_ind, token_type, token_string)]
         self.token_list = self.get_token_stack(string)
         self.counter = 0
 
 
-        if not self.token_list[self.counter].handle():
-            raise VarParseError(f"Unknown error occurred when parsing string: \"{string}\"")
-
+        self.token_list[self.counter].handle(self)
         retval_arr = []
         for elem in self.token_list:
-            if elem.token_type != VarParser.VarParseTokenType.VAR_CHAR_STRING and \
-               elem.token_type != VarParser.VarParseTokenType.VAR_CLOSE_BRACE:
-                raise development.exceptions.DevelopmentError("""
-Somehow, we have a non char string token in the token list after parsing that is not
-a spent close brace.""") 
+            if not elem.consumed:
+                raise development.exceptions.DevelopmentError(f"""
+We have an unspent token in the token list after parsing {elem.token_string}""")
             
-            if elem.token_type == VarParser.VarParseTokenType.VAR_CLOSE_BRACE and\
-               not elem.spent:
-                raise development.exceptions.DevelopmentError("""We have an unspent close brace in the
-token list after parsing.""")
-
-            retval_arr.append(elem.token_string)
-
+            if elem.token_type == VarParser.VarParseTokenType.VAR_CHAR_STRING:
+                retval_arr.append(elem.token_string)
         return "".join(retval_arr)

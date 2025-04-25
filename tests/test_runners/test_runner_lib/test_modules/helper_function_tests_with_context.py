@@ -13,7 +13,7 @@ sys.path.append(common.scripts_dir.__str__())
 gentestfile = importlib.import_module("generate-test-file")
 filepath_helper = importlib.import_module("filepath_helper")
 
-class TestHelperFunctionsRequiringContext(unittest.TestCase):
+class TestHelperFunctionsRequiringContext(common.TestCaseWrapper):
 
     def setUp(self) -> None:
         self.pretend_working_directory = common.project_base_dir

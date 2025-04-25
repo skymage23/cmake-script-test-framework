@@ -11,7 +11,7 @@ import common
 sys.path.append(common.scripts_dir.__str__())
 fp_helper = importlib.import_module("filepath_helper")
 
-class TestFilepathHelper(unittest.TestCase):
+class TestFilepathHelper(common.TestCaseWrapper):
     @unittest.skipIf(os.name == 'nt', 'drive letters are set based on cwd on Windows systems.')
     def test_filepath_helper_posix(self):
         sample_path="/path/to/sample/file"

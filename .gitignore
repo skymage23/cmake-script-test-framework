@@ -1,12 +1,17 @@
-python/tests/test-*
+# Python bytecode
+__pycache__/
+*.pyc
+*.py[cod]
+*$py.class
+
+# Editor files
 ~*
 *~
 *.swp
 */*.swp
+
+# Test files
+python/tests/test-*
+python/tests/*.cmake
 */trial.cmake
 trial.cmake
-__pycache__
-*.pyc
-**/*.pyc
-python/tests/*.cmake
-__pycache__

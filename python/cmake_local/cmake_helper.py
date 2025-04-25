@@ -23,7 +23,7 @@ class CMakeScriptContext:
         return context.project_source_dir.__str__()
     
     def resolve_cmake_current_list_file(context):
-        return context.list_file
+        return context.list_file.__str__()
     
     def resolve_cmake_current_list_dir(context):
         return context.list_file.parent.__str__()    
@@ -62,6 +62,8 @@ class CMakeScriptContext:
             retval = os.environ.get(varname)
             if retval is None:
                 raise VarEnvironExpansionError(varname)
+
+        return retval
     #What if there is more than one variable?
     # we need to change direction. We need to make tokenizer and a lexer.
 
