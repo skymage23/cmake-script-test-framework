@@ -160,14 +160,14 @@ class VarExpansionParser:
        # open_brace_node = self.var_expansion_nest_stack[-1]
        # open_brace_node.children.append(close_brace_node)
 
-        #open_brace_token_id = self.var_expansion_nest_stack.pop()
-        #self.ast.add_sibling_by_token_ref(open_brace_token_id, token)
-        #self.consume_token()
+        open_brace_token_id = self.var_expansion_nest_stack.pop()
+        self.ast.add_sibling_by_token_ref(open_brace_token_id, token)
+        self.consume_token()
 
-        self.var_expansion_nest_stack.pop() #to TRY not to break the parser further until we test the new execution logic.
-        self.ast.shift_to_child_by_index(
-            self.ast.add_child_to_current_node(token)[0]
-        )
+        #self.var_expansion_nest_stack.pop() #to TRY not to break the parser further until we test the new execution logic.
+        #self.ast.shift_to_child_by_index(
+        #    self.ast.add_child_to_current_node(token)[0]
+        #)
         
 
     def parse_env(self):
