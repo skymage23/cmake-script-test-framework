@@ -47,9 +47,16 @@ class VarExpansionParser:
         self.token_list = None 
         self.ast = CMakeVarExpansionAST()
         self.parse_state_token_stack = []
+        self.recursion_depth = 0
+        self.max_recursion_depth = 1000  # Reasonable limit to prevent stack overflow
 
+    def check_recursion_depth(self, func_name: str):
+        self.recursion_depth += 1
+        if self.recursion_depth > self.max_recursion_depth:
+            raise VarParseError(f"Maximum recursion depth ({self.max_recursion_depth}) exceeded."
+                                f"This may indicate an infinite loop in the parser."
+                                f"Function: {func_name}")
 
-        
     #Parser-specific list operations:
     def consume_token(self):
         token = self.token_list.get_current_token()
@@ -77,6 +84,7 @@ class VarExpansionParser:
 
     #Parser main logic:
     def parse_string(self):
+        self.check_recursion_depth("parse_string")
         if self.token_list.is_token_list_fully_iterated():
             raise development.exceptions.DevelopmentError(
                 "Token list is fully iterated. Why are we still trying to parse?"
@@ -98,7 +106,9 @@ class VarExpansionParser:
         self.consume_token()
 
     def parse_open_brace(self):
+        self.check_recursion_depth("parse_open_brace")
         token = None
+        upcoming_token = None
         if self.token_list.is_token_list_fully_iterated():
             raise development.exceptions.DevelopmentError(
                 "Token list is fully iterated. Why are we still trying to parse?"
@@ -115,9 +125,14 @@ class VarExpansionParser:
             )
         
         # Check if this is part of a valid variable expansion
+        upcoming_token = self.peek_until(VarParseTokenType.VAR_CLOSE_BRACE)
+        if upcoming_token is None:
+            raise VarParseError("Unterminated variable expansion.")
+        
         is_valid_expansion = False
         if len(self.parse_state_token_stack) > 0:
             prev_token = self.parse_state_token_stack[-1]
+            
             if prev_token[0] in [VarParseTokenType.VAR_EXPANSION, VarParseTokenType.VAR_ENV]:
                 is_valid_expansion = True
         
@@ -137,6 +152,7 @@ class VarExpansionParser:
         self.consume_token()
 
     def parse_close_brace(self):
+        self.check_recursion_depth("parse_close_brace")
         token = None
         if self.token_list.is_token_list_fully_iterated():
             raise development.exceptions.DevelopmentError(
@@ -160,17 +176,19 @@ class VarExpansionParser:
        # open_brace_node = self.var_expansion_nest_stack[-1]
        # open_brace_node.children.append(close_brace_node)
 
-        open_brace_token_id = self.var_expansion_nest_stack.pop()
-        self.ast.add_sibling_by_token_ref(open_brace_token_id, token)
-        self.consume_token()
+        #open_brace_token_id = self.var_expansion_nest_stack.pop()
+        #self.ast.add_sibling_by_token_ref(open_brace_token_id, token)
+        #self.consume_token()
 
         #self.var_expansion_nest_stack.pop() #to TRY not to break the parser further until we test the new execution logic.
-        #self.ast.shift_to_child_by_index(
-        #    self.ast.add_child_to_current_node(token)[0]
-        #)
+        self.consume_token()
+        self.ast.shift_to_child_by_index(
+            self.ast.add_child_to_current_node(token)[0]
+        )
         
 
     def parse_env(self):
+        self.check_recursion_depth("parse_env")
         token = None
         prev_token = None
         next_token = None
@@ -213,6 +231,7 @@ class VarExpansionParser:
         self.consume_token()
          
     def parse_var_expansion(self):
+        self.check_recursion_depth("parse_var_expansion")
         token = None
         next_token = None
 
@@ -242,6 +261,7 @@ class VarExpansionParser:
     #Mod to handle handling token children:
     #Dispatch has access to previous state.
     def build_ast(self):
+        self.check_recursion_depth(func_name="build_ast")
         while not self.token_list.is_token_list_fully_iterated():
             token = self.token_list.get_current_token()
             if token[0] == VarParseTokenType.VAR_ENV:

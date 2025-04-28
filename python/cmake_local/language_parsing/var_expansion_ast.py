@@ -359,10 +359,12 @@ class CMakeVarExpansionAST:
             return True
         return False
 
-    def pretty_print(self, node=None, is_last=True):
+    def pretty_stringify(self, node=None, is_last=True):
+        retval_arr = []
+        longest_line_length = 0
         if node is None:
             if self.root is None:
-                print("(empty tree)")
+                retval_arr.append("(empty tree)")
                 return
             node = self.root
             is_last = True if (node.children is None or len(node.children) == 0) else False
@@ -379,14 +381,18 @@ class CMakeVarExpansionAST:
             if not current_node.children:
                 branch = "└── " if current_is_last else "├── "
                 if current_node.is_root:
-                    print(f"{current_prefix}{branch}ROOT")
+                    retval_arr.append(f"{current_prefix}{branch}ROOT")
+                    longest_line_length = max(longest_line_length, len(retval_arr[-1]))
                 else:
-                    print(f"{current_prefix}{branch}{current_node.token[0]}: {current_node.token[1]}")
+                    retval_arr.append(f"{current_prefix}{branch}{current_node.token[0]}: {current_node.token[1]}")
+                    longest_line_length = max(longest_line_length, len(retval_arr[-1]))
             else:
                 if current_node.is_root:
-                    print(f"{current_prefix}ROOT")
+                    retval_arr.append(f"{current_prefix}ROOT")
+                    longest_line_length = max(longest_line_length, len(retval_arr[-1]))
                 else:
-                    print(f"{current_prefix}{current_node.token[0]}: {current_node.token[1]}")
+                    retval_arr.append(f"{current_prefix}{current_node.token[0]}: {current_node.token[1]}")
+                    longest_line_length = max(longest_line_length, len(retval_arr[-1]))
 
             # Update prefix for children
             new_prefix = current_prefix + ("    " if current_is_last else "│   ")
@@ -396,5 +402,12 @@ class CMakeVarExpansionAST:
                 child = current_node.children[i]
                 is_last_child = (i == len(current_node.children) - 1)
                 stack.append((child, new_prefix, is_last_child))
+
+        return "\n".join(retval_arr), longest_line_length
+    
+    def pretty_print(self):
+        retval_arr, longest_line_length = self.pretty_stringify()
+        print(retval_arr)
+        print("-" * longest_line_length)
 
     

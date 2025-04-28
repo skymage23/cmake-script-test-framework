@@ -4,8 +4,16 @@ from . import var_expansion_parsing
 from . import var_expansion_tokens
 from . import var_expansion_ast
 
-
-
+def pretty_print_ast(ast: var_expansion_ast.CMakeVarExpansionAST):
+    tree_str, longest_line_length = ast.pretty_stringify()
+    separator_line = "#" * longest_line_length
+    print() 
+    print()
+    print(separator_line)
+    print(tree_str)
+    print(separator_line)
+    print() 
+    print()
 
 #We need to set some expectations for the AST:
 #1. Leaf nodes are always VAR_CHAR_STRING tokens.
@@ -19,7 +27,7 @@ def execute_ast(ast: var_expansion_ast.CMakeVarExpansionAST, context: cmake_help
     """
     is_env_var = False
     param = None
-    ast.pretty_print()
+    pretty_print_ast(ast)
     token_stack = [node for node in ast.get_bottom_right_to_upper_left_iterator()]
     print(token_stack) 
 
@@ -41,9 +49,9 @@ def execute_ast(ast: var_expansion_ast.CMakeVarExpansionAST, context: cmake_help
                     param = token[1] + param
                 else:
                     param = token[1]
-            case var_expansion_tokens.VarParseTokenType.VarParseTokenType.VAR_OPEN_BRACE:
-                
-                break
+            #case var_expansion_tokens.VarParseTokenType.VAR_OPEN_BRACE:
+            #    
+            #    break
 
     return param
    
