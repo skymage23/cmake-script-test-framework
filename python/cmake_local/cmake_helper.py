@@ -52,7 +52,6 @@ class CMakeScriptContext:
 
     def resolve_if_builtin_var(self, varname):
         retval_func = self.supported_builtin_vars.get(varname)
-
         if retval_func is None:
             return None
         return retval_func(self)

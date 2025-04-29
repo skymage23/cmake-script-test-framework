@@ -32,13 +32,12 @@ class TestHelperFunctionsRequiringContext(common.TestCaseWrapper):
         self.app_singleton =  gentestfile.ApplicationSingleton(context)
         super().setUp()
 
-        if self.use_breakpoint:
-            breakpoint()
-
     def test_var_in_include_filepath(self):
         if self.use_breakpoint:
             breakpoint()
-        input = R"${CMAKE_CURRENT_LIST_DIR}/test-include.cmake"
+        fake_path_hack = pathlib.Path(r"${CMAKE_CURRENT_LIST_DIR}")
+        fake_path_hack =  fake_path_hack / "test-include.cmake"
+        input = fake_path_hack.__str__()
         output = self.app_singleton.context.resolve_vars(input)
         self.assertEqual(
             output, 
