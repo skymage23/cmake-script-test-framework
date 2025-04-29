@@ -81,11 +81,15 @@ class TestVarExpansionResolution(common.TestCaseWrapper):
         self.assertEqual(output, "tests")
 
     def test_multiple_var_expansion(self):
-        input = "${CMAKE_CURRENT_LIST_DIR}/${CMAKE_CURRENT_LIST_FILE}"
+        self.context.setVariable("VAR1", "Hello", is_env_var = False)
+        self.context.setVariable("VAR2", "World", is_env_var = False)
+        input = "${VAR1}, ${VAR2}"
         if self.use_breakpoint:
             breakpoint()
         output = language_parsing.resolve_vars(input, self.context)
-        self.assertEqual(output, "tests/tests/test.cmake")
+        self.context.unsetVariable("VAR1", is_env_var = False)
+        self.context.unsetVariable("VAR2", is_env_var = False)
+        self.assertEqual(output, "Hello, World")
 
     def test_environ_var_expansion(self):
         self.context.setVariable("TEST_ENV_VAR", "tests", is_env_var = True)
