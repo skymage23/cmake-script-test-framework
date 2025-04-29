@@ -1,11 +1,11 @@
 from . import cmake_helper
 # Re-export commonly used classes and functions
 from .cmake_helper import CMakeScriptContext
-from .language_parsing.var_expansion_parsing import (
+from .language_parsing import (
     VarParseError
 )
 
-from .language_parsing.cmake_var_expander import (
+from .language_parsing import (
     resolve_vars
 )
 

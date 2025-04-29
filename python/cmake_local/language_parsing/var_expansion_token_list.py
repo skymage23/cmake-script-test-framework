@@ -116,6 +116,11 @@ class VarExpansionTokenList:
             raise development.exceptions.DevelopmentError(
                 "Token list is fully iterated. Why are we still trying to parse?"
             )
+
+        if (lookahead_count < 0):
+            raise development.exceptions.DevelopmentError(
+                "Lookahead count cannot be negative"
+            )
     
         if self.token_list_ind + lookahead_count >= len(self.token_list):
             raise development.exceptions.DevelopmentError(

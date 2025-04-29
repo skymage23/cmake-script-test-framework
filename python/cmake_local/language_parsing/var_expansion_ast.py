@@ -61,12 +61,15 @@ class CMakeVarExpansionAST:
     class BottomRightToUpperLeftTreeIterator:
         def __init__(self, start_node: 'CMakeVarExpansionAST._CMakeVarExpansionASTNode'):
             self.start_id = start_node.node_id
-            self.current_node = CMakeVarExpansionAST.IteratorMetadataStruct(start_node, start_node.get_child_count() - 1)
-            self.metadata_stack = [self.current_node]
+            self.current_node = None
+            self.metadata_stack = [
+                CMakeVarExpansionAST.IteratorMetadataStruct(start_node, start_node.get_child_count() - 1)
+            ]
     
         def __next__(self):
             if not self.metadata_stack:
                 raise StopIteration
+            self.current_node = self.metadata_stack.pop()
 
             node = self.current_node.node
             if node.node_id == self.start_id:
@@ -88,9 +91,12 @@ class CMakeVarExpansionAST:
                         )
                     )
                     node = node.children[node.get_child_count() - 1]
-                self.current_node = self.metadata_stack[-1]
-            else:
-                self.current_node = self.metadata_stack.pop()
+
+                #self.current_node = self.metadata_stack[-1]
+                #self.current_node = self.metadata_stack.pop()
+            #else:
+            #   self.current_node = self.metadata_stack.pop()
+            #self.current_node = self.metadata_stack.pop()
 
             if self.metadata_stack:
                 self.metadata_stack[-1].child_index -= 1
@@ -343,7 +349,7 @@ class CMakeVarExpansionAST:
             raise development.exceptions.DevelopmentError("Current node is None. This should never happen.")
         
         if self.current_node.is_root:
-            raise development.exceptions.DevelopmentError("Cannot merge adjacent tokens when current node is root")
+            return False #Cannot merge adjacent tokens when current node is root
         
         if self.current_node.token is None:
             raise development.exceptions.DevelopmentError(

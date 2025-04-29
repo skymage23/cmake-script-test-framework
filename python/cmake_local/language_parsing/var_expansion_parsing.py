@@ -35,8 +35,6 @@ class VarParseError(Exception):
 
 
 
-
- 
 class VarExpansionParser:
     def __init__(self, context):
         self.context = context
@@ -89,7 +87,6 @@ class VarExpansionParser:
             raise development.exceptions.DevelopmentError(
                 "Token list is fully iterated. Why are we still trying to parse?"
             )
-        
         token = self.token_list.get_current_token()
         validate_token(token, token_type=VarParseTokenType.VAR_CHAR_STRING)
         
@@ -168,19 +165,6 @@ class VarExpansionParser:
             self.parse_string()
             return
         
-        # Create the close brace node and mark it for skipping
-       # close_brace_node = VarParser.CMakeVarExpansionASTNode(token)
-       # close_brace_node.skip_node = True
-       # 
-       # # Append this close brace to its corresponding open brace
-       # open_brace_node = self.var_expansion_nest_stack[-1]
-       # open_brace_node.children.append(close_brace_node)
-
-        #open_brace_token_id = self.var_expansion_nest_stack.pop()
-        #self.ast.add_sibling_by_token_ref(open_brace_token_id, token)
-        #self.consume_token()
-
-        #self.var_expansion_nest_stack.pop() #to TRY not to break the parser further until we test the new execution logic.
         self.consume_token()
         self.ast.shift_to_child_by_index(
             self.ast.add_child_to_current_node(token)[0]

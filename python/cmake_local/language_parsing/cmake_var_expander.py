@@ -1,3 +1,5 @@
+import os
+
 import development.exceptions
 from .. import cmake_helper
 from . import var_expansion_parsing
@@ -15,48 +17,78 @@ def pretty_print_ast(ast: var_expansion_ast.CMakeVarExpansionAST):
     print() 
     print()
 
+
+def resolve_var(context, varname, is_env_var = False):
+
+    retval = None
+    if not is_env_var:
+        retval = context.resolve_if_builtin_var(varname)
+    else:
+        retval = os.environ.get(varname)
+
+    if retval is None:
+        raise ValueError("\"{}\" is not a variable we are capable of resolving.".format(varname))
+
+    return retval
+
 #We need to set some expectations for the AST:
 #1. Leaf nodes are always VAR_CHAR_STRING tokens.
 #2. The root node has no parent.
 #3. The root node has no siblings.
 
-def execute_ast(ast: var_expansion_ast.CMakeVarExpansionAST, context: cmake_helper.CMakeScriptContext) -> str:
+def merge_stack_string_elements(
+        stack: list[tuple[var_expansion_tokens.VarParseTokenType, str]],
+        start: int,
+        end: int    
+    ) -> str:
+    merged_stack = []
+    for i in range(start, end):
+        merged_stack.append(stack[i])
+    
+    #Pop unneeded elements from the stack.
+    for i in range(start + 1, end):
+        stack.pop(start)
+    merged_stack.reverse()
+    stack[-1] = "".join(merged_stack)
+
+def execute_ast(ast: var_expansion_ast.CMakeVarExpansionAST, context) -> str:
     """
     Expands variables in the AST using the given context.
     The parser has already validated the syntax, so we can trust the token sequences.
     """
     is_env_var = False
-    param = None
-    pretty_print_ast(ast)
+    param_stack = []
+    nesting_level = 0
+    back_check = 0
     token_stack = [node for node in ast.get_bottom_right_to_upper_left_iterator()]
-    print(token_stack) 
 
     if len(token_stack) == 0:
         raise development.exceptions.DevelopmentError("AST is empty")
     
-     
-    for token in token_stack:
+    for i in range(0, len(token_stack)):
+        token = token_stack[i]
         match token[0]:
             case var_expansion_tokens.VarParseTokenType.VAR_EXPANSION:
-                if param is None:
+                if len(param_stack) == 0:
                     development.exceptions.DevelopmentError("No parameter found for var expansion")
-                param = context.resolve_var(param, is_env_var)
+                back_check = i - (3 if not is_env_var else 4)
+                if len(param_stack) > 1 and token_stack[back_check][0] != var_expansion_tokens.VarParseTokenType.VAR_CLOSE_BRACE:
+                    merge_stack_string_elements(param_stack, 0, len(param_stack))
+                param_stack.append(resolve_var(context, param_stack.pop(), is_env_var))
+                nesting_level -= 1
                 is_env_var = False
             case var_expansion_tokens.VarParseTokenType.VAR_ENV:
                 is_env_var = True
             case var_expansion_tokens.VarParseTokenType.VAR_CHAR_STRING:
-                if param is not None:
-                    param = token[1] + param
-                else:
-                    param = token[1]
-            #case var_expansion_tokens.VarParseTokenType.VAR_OPEN_BRACE:
-            #    
-            #    break
+                param_stack.append(token[1])
+            case var_expansion_tokens.VarParseTokenType.VAR_CLOSE_BRACE:
+                nesting_level += 1
 
-    return param
+    param_stack.reverse()
+    return "".join(param_stack)
    
 
-def resolve_vars(input: str, context: cmake_helper.CMakeScriptContext) -> str:
+def resolve_vars(input: str, context) -> str:
     """
     Resolves variables in the input string using the given variable resolver.
 

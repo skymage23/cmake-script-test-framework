@@ -47,7 +47,7 @@ class TestHelperFunctionsRequiringContext(common.TestCaseWrapper):
     
     def test_backreference_in_include_filepath(self):
         input = "/grandparent_dir/parent_dir/../test-include.cmake"
-        output = self.app_singleton.context.resolve_abs_path(input)
+        output = filepath_helper.resolve_abs_path(input)
         expected_output_path = pathlib.Path("/grandparent_dir/test-include.cmake").resolve()
         self.assertEqual(
             output, 
@@ -62,7 +62,7 @@ class TestHelperFunctionsRequiringContext(common.TestCaseWrapper):
             print(output)
         self.assertEqual(
             output, 
-            (common.test_dir / "test_include.cmake").__str__()
+            (common.test_dir / "test-include.cmake").__str__()
         )
 
     #Ok. This part is not going to make sense in context

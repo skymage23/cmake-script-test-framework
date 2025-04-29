@@ -13,13 +13,10 @@ import sys
 import cmake_local.cmake_helper as cmake_helper
 import filepath_helper
 import development.exceptions
-from var_expansion_parsing import VarParseTokenType
 
 # Because internal structure can shift, I choose to expose as little as possible.
 # This encapsulation allows for future implementation changes without breaking
 # the public interface.
-
-class CMakeVarExpansionAST:
 
 class TestDescriptorFileParseError(RuntimeError):
     def __init__(self, msg, *args, line = '- ',  **kwargs):
@@ -352,7 +349,6 @@ def parse_file(app_singleton):
     return parse_status
 
 def generate_file_contents(parse_status):
-    test_keys = None;
     preamble = """
 #*******************************************************
 # This is a generated file that is usually destroyed

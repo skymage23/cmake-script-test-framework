@@ -56,6 +56,7 @@ class TestCaseWrapper(TestCase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.use_breakpoint = False
+        self.enable_output_printing = False
 
     def setUp(self):
         super().setUp()
