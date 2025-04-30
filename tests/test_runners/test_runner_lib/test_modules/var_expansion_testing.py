@@ -193,3 +193,8 @@ class TestVarExpansionResolution(common.TestCaseWrapper):
             breakpoint()
         with self.assertRaises(language_parsing.VarParseError):
             parser.build_ast()
+
+    def test_no_fail_mode(self):
+        input = "${NOT_A_VAR}"
+        output = language_parsing.resolve_vars(input, self.context, no_fail = True)
+        self.assertEqual(output, input)

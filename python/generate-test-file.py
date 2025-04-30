@@ -334,7 +334,7 @@ def parse_file(app_singleton):
     
     for i in range(0,len(parse_status.lines)):
         temp_str = parse_status.lines[i]
-        parse_status.lines[i] = app_singleton.context.resolve_vars(temp_str)
+        parse_status.lines[i] = app_singleton.context.resolve_vars(temp_str, no_fail = True)
 
     while parse_status.current_index < len(parse_status.lines):
         checks_index = 0

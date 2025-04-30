@@ -88,16 +88,30 @@ def execute_ast(ast: var_expansion_ast.CMakeVarExpansionAST, context) -> str:
     return "".join(param_stack)
    
 
-def resolve_vars(input: str, context) -> str:
+
+def resolve_vars(input: str, context, no_fail = False) -> str:
     """
     Resolves variables in the input string using the given variable resolver.
 
     Args:
         input: The input string to resolve variables in.
+        context: The context to resolve variables in.
+        no_fail: If True, do not raise an error if a variable is not found.
+                 As an aside, I'd rather not have this parameter,
+                 but for now, it is necessary if we don't want to
+                 add CMake "set" syntax to the language.
 
     Returns:
         The input string with variables resolved.
     """
-    parser = var_expansion_parsing.VarExpansionParser(input)
-    ast = parser.parse(input)
-    return execute_ast(ast, context)
+    retval = None
+    try:
+        parser = var_expansion_parsing.VarExpansionParser(input)
+        ast = parser.parse(input)
+        retval = execute_ast(ast, context)
+    except ValueError as e:
+        if not no_fail:
+            raise e
+        else:
+            return input
+    return retval

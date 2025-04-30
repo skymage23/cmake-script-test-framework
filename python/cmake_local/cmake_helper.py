@@ -61,8 +61,8 @@ class CMakeScriptContext:
             super().__init__(f"CMake variable dereference language syntax error: {message}")
 
 
-    def resolve_vars(self, string):
-        return language_parsing.resolve_vars(string, self)
+    def resolve_vars(self, string, no_fail = False):
+        return language_parsing.resolve_vars(string, self, no_fail)
     
     def __str__(self):
         #Hello:
