@@ -13,10 +13,10 @@ class VarEnvironExpansionError(Exception):
 
 class CMakeScriptContext:
     def resolve_cmake_build_dir(context):
-        return context.build_dir
+        return context.build_dir.__str__()
     
     def resolve_cmake_source_dir(context):
-        return context.source_dir
+        return context.source_dir.__str__()
     
     def resolve_project_source_dir(context):
         return context.project_source_dir.__str__()

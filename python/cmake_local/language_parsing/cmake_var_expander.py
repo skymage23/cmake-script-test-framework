@@ -114,4 +114,9 @@ def resolve_vars(input: str, context, no_fail = False) -> str:
             raise e
         else:
             return input
+    except var_expansion_parsing.VarParseError as e:
+        if not no_fail:
+            raise e
+        else:
+            return input
     return retval
